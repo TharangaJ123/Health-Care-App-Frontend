@@ -1,0 +1,59 @@
+Developer Guidelines
+
+Welcome! Please follow these guidelines when contributing to this project.
+
+1. Branching Strategy
+
+Always create your branch from the main branch.
+
+Follow this branch naming convention:
+
+feature/<your-feature-name>
+
+
+Example:
+
+feature/abc
+
+
+
+
+2. Directory Structure for Features
+
+Before starting work on your feature, create a directory under the project root with the same name as your feature branch.
+
+Inside this directory, include a styles folder. Do not create styles inside component files.
+
+Example:
+
+project-root/
+│
+└── feature/abc/
+    ├── styles/
+    └── [your feature files]
+
+
+For images used in your feature, create a folder under assets/images/ with the same name as your feature.
+
+Example:
+
+assets/images/feature-abc/
+
+
+Always refer to the existing project structure before starting your work to ensure consistency.
+
+
+
+3. Workflow Summary
+
+Pull the latest changes from main.
+
+Create a new branch following the branch naming convention.
+
+Create a directory matching your branch name.
+
+Implement your feature inside that directory.
+
+Commit and push your changes.
+
+Create a Pull Request for review.
