@@ -14,7 +14,13 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Calendar } from 'react-native-calendars';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
-import { getMedicationsForDate, updateStatus, getSchedule, deleteMedication } from '../../utils/storage';
+import { 
+  getMedicationsForDate, 
+  updateStatus, 
+  getSchedule, 
+  deleteMedication, 
+  removeScheduleEntriesForMedication 
+} from '../../utils/storage';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -63,7 +69,7 @@ const HomeScreen = () => {
     const handleDelete = (item) => {
     Alert.alert(
       'Delete Medication',
-      `Are you sure you want to delete ${item.name}?`,
+      `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
       [
         {
           text: 'Cancel',
@@ -73,32 +79,62 @@ const HomeScreen = () => {
           text: 'Delete',
           onPress: async () => {
             try {
-              await deleteMedication(item.id);
-              fetchMedications(); // Refresh the list
+              // First, remove the schedule entries for this medication
+              await removeScheduleEntriesForMedication(item.medicationId);
+              
+              // Then delete the medication itself
+              await deleteMedication(item.medicationId);
+              
+              // Show success message
+              Alert.alert(
+                'Success',
+                `"${item.name}" has been deleted successfully.`,
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Refresh the medication list
+                      fetchMedications();
+                      // Also refresh the marked dates
+                      fetchMarkedDates();
+                    }
+                  },
+                ]
+              );
             } catch (error) {
-              Alert.alert('Error', 'Could not delete medication.');
+              console.error('Delete error:', error);
+              Alert.alert(
+                'Error',
+                `Could not delete "${item.name}". Please try again.\n\nError: ${error.message}`,
+                [{ text: 'OK' }]
+              );
             }
           },
           style: 'destructive',
         },
       ],
-      { cancelable: false }
+      { cancelable: true }
     );
   };
 
   const renderMedicationItem = ({ item }) => (
     <View style={styles.medicationCard}>
+        <View style={styles.medicationHeader}>
+            <Text style={styles.medicationName}>{item.name}</Text>
+            <View style={styles.medicationStatus}>
+                <Feather name={item.status === 'pending' ? 'clock' : 'check-circle'} size={16} color={item.status === 'pending' ? '#F59E0B' : '#10B981'} />
+                <Text style={[styles.statusText, { color: item.status === 'pending' ? '#F59E0B' : '#10B981' }]}>
+                    {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                </Text>
+            </View>
+        </View>
         <View style={styles.medicationInfo}>
             <View style={styles.medicationIconContainer}>
                 <MaterialIcons name="medication" size={24} color="#2563EB" />
             </View>
             <View style={{ flex: 1 }}>
-                <Text style={styles.medicationName}>{item.name}</Text>
                 <Text style={styles.medicationTime}>{item.time}</Text>
-            </View>
-            <View style={styles.medicationStatus}>
-                <Feather name={item.status === 'pending' ? 'clock' : 'check-circle'} size={18} color="#6B7280" />
-                <Text style={styles.statusText}>{item.status.charAt(0).toUpperCase() + item.status.slice(1)}</Text>
+                {item.dosage && <Text style={styles.medicationDosage}>{item.dosage}</Text>}
             </View>
             <TouchableOpacity onPress={() => handleDelete(item)} style={styles.deleteButton}>
                 <Feather name="trash-2" size={20} color="#EF4444" />
@@ -189,6 +225,15 @@ const HomeScreen = () => {
         <View style={styles.card}>
           <Text style={styles.quickActionsTitle}>Quick Actions</Text>
           <View style={styles.quickActionsContainer}>
+            <TouchableOpacity 
+              style={styles.quickActionButton} 
+              onPress={() => navigation.navigate('Tracker')}
+            >
+              <View style={[styles.quickActionIcon, {backgroundColor: '#3B82F6'}]}>
+                <Feather name="activity" size={24} color="#fff" />
+              </View>
+              <Text style={styles.quickActionText}>Medicine Tracker</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.quickActionButton}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#A78BFA'}]}><Feather name="bell" size={24} color="#fff" /></View>
               <Text style={styles.quickActionText}>Test Notification</Text>
@@ -196,10 +241,6 @@ const HomeScreen = () => {
             <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('ReminderSettings')}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#6B7280'}]}><Feather name="settings" size={24} color="#fff" /></View>
               <Text style={styles.quickActionText}>Reminder Settings</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickActionButton}>
-              <View style={[styles.quickActionIcon, {backgroundColor: '#EF4444'}]}><Feather name="trash-2" size={24} color="#fff" /></View>
-              <Text style={styles.quickActionText}>Clean Data</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -223,10 +264,12 @@ const styles = StyleSheet.create({
   addMedicineButtonText: { color: '#fff', fontWeight: '500', marginLeft: 4 },
   deleteHint: { fontSize: 12, color: '#6B7280', marginBottom: 16 },
   noMedicationText: { textAlign: 'center', color: '#6B7280', paddingVertical: 20 },
-  medicationCard: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-  medicationInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  medicationCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB', elevation: 1 },
+  medicationHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  medicationInfo: { flexDirection: 'row', alignItems: 'center' },
   medicationIconContainer: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E0E7FF', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  medicationName: { fontSize: 16, fontWeight: '600', color: '#111827' },
+  medicationName: { fontSize: 18, fontWeight: '700', color: '#1E40AF' },
+  medicationDosage: { fontSize: 14, color: '#4B5563', marginTop: 2 },
   medicationTime: { fontSize: 14, color: '#6B7280' },
     medicationStatus: { flexDirection: 'row', alignItems: 'center'},
   deleteButton: { position: 'absolute', top: 16, right: 16, padding: 8 },
@@ -239,7 +282,7 @@ const styles = StyleSheet.create({
   missedButton: { backgroundColor: '#EF4444' },
   skipButton: { backgroundColor: '#F59E0B' },
   quickActionsTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 },
-  quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-around' },
+  quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 8 },
   quickActionButton: { alignItems: 'center' },
   quickActionIcon: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   quickActionText: { fontSize: 12, color: '#374151' },

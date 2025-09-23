@@ -111,42 +111,42 @@ export const deleteMedication = async (id) => {
     console.log('Deleting medication with ID:', id, 'Type:', typeof id);
     const medications = await getMedications();
     
-    // Convert ID to number if it's a string
+    // Convert ID to number for comparison
     const idToCompare = typeof id === 'string' ? parseInt(id, 10) : id;
     
-    // Filter out the medication to delete
-    const filteredMedications = medications.filter(med => {
-      // Get the medication ID, handling both string and number types
+    // Find the medication to delete
+    const medicationIndex = medications.findIndex(med => {
+      // Handle both string and number IDs
       const medId = med.id;
-      
-      // Compare as both numbers and strings to handle type mismatches
       return (
-        medId !== id && 
-        medId !== idToCompare &&
-        String(medId) !== String(id) &&
-        String(medId) !== String(idToCompare) &&
-        (isNaN(medId) || medId != id) // Loose comparison for number-like strings
+        medId === id || // Direct match
+        medId === idToCompare || // Numeric match
+        String(medId) === String(id) || // String match
+        String(medId) === String(idToCompare) // String numeric match
       );
     });
     
-    // If no medication was removed
-    if (filteredMedications.length === medications.length) {
+    if (medicationIndex === -1) {
       console.log('Medication not found. ID:', id, 'Type:', typeof id);
       console.log('Available medication IDs:', medications.map(m => `${m.id} (${typeof m.id})`));
       throw new Error(`Medication with ID ${id} not found in database`);
     }
     
-    console.log(`Deleting medication. Before: ${medications.length}, After: ${filteredMedications.length}`);
+    // Create new array without the medication to delete
+    const updatedMedications = [...medications];
+    updatedMedications.splice(medicationIndex, 1);
+    
+    console.log(`Deleting medication. Before: ${medications.length}, After: ${updatedMedications.length}`);
     
     // Save the updated medications list
-    await AsyncStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify(filteredMedications));
+    await AsyncStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify(updatedMedications));
     
     // Remove all schedule entries for this medication
     console.log('Removing schedule entries for medication ID:', id);
     await removeScheduleEntriesForMedication(id);
     
-    // If ID was a string, also try with the numeric version
-    if (typeof id === 'string' && !isNaN(parseInt(id, 10))) {
+    // Also try with numeric ID if input was a string
+    if (typeof id === 'string' && !isNaN(idToCompare)) {
       console.log('Also checking for numeric ID:', idToCompare);
       await removeScheduleEntriesForMedication(idToCompare);
     }
@@ -234,8 +234,23 @@ export const getSchedule = async () => {
 
 export const getMedicationsForDate = async (date) => {
   try {
-    const schedule = await getSchedule();
-    return schedule.filter(entry => entry.date === date);
+    const [schedule, allMedications] = await Promise.all([
+      getSchedule(),
+      getMedications()
+    ]);
+    
+    return schedule
+      .filter(entry => entry.date === date)
+      .map(entry => {
+        // Find the corresponding medication
+        const medication = allMedications.find(m => m.id === entry.medicationId);
+        return {
+          ...entry,
+          name: medication ? medication.name : 'Unknown Medication',
+          dosage: medication ? medication.dosage : null,
+          instructions: medication ? medication.instructions : null
+        };
+      });
   } catch (error) {
     console.error('Error getting medications for date:', error);
     return [];
