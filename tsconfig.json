@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.expo.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "expo-module-scripts/*": [
+        "./node_modules/expo-module-scripts/*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ]
+}

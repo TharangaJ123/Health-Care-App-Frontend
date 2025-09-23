@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "commonjs",
+    "baseUrl": ".",
+    "checkJs": false,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "jsx": "react-native",
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "types": []
+  },
+  "exclude": [
+    "node_modules",
+    "**/node_modules/*",
+    "**/android",
+    "**/ios",
+    "**/web-build",
+    "**/bower_components",
+    "**/*.test.js"
+  ],
+  "include": [
+    "**/*.js",
+    "**/*.jsx",
+    "global.d.ts"
+  ]
+}

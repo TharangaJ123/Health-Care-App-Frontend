@@ -1,0 +1,9 @@
+{
+  "extends": "expo-module-scripts/tsconfig.base",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "expo-module-scripts/*": ["./node_modules/expo-module-scripts/*"]
+    }
+  }
+}
