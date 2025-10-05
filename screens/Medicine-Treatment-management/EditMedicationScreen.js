@@ -9,7 +9,6 @@ import {
   Alert,
   Platform,
   SafeAreaView,
-  StatusBar,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -175,39 +174,44 @@ const EditMedicationScreen = ({ navigation, route }) => {
       
       if (medicationToUpdate.frequency !== 'as-needed' && medicationToUpdate.times.length === 0) {
         Alert.alert('Error', 'Please add at least one valid reminder time (e.g., 08:00 AM).');
-        return;
       }
       
       // Ensure numeric ID
       const idNum = typeof medicationId === 'string' ? parseInt(medicationId, 10) : medicationId;
       
-      // Cancel existing notifications for this medication
-      await cancelScheduledReminder(idNum);
-      
-      // Update the medication in storage
-      await updateMedication(idNum, medicationToUpdate);
-      
-      // Schedule new notifications if reminders are enabled
-      if (medicationToUpdate.reminderEnabled && medicationToUpdate.times && medicationToUpdate.times.length > 0) {
-        try {
-          await scheduleMedicationReminder({
-            id: idNum,
-            ...medicationToUpdate,
-            daysOfWeek: [0, 1, 2, 3, 4, 5, 6] // Default to all days
-          });
-        } catch (error) {
-          console.error('Error scheduling notifications:', error);
-          // Don't block the update operation if notification scheduling fails
+      try {
+        // Cancel existing notifications for this medication (only on native platforms)
+        if (Platform.OS !== 'web') {
+          await cancelScheduledReminder(idNum);
         }
+        
+        // Update the medication in storage
+        await updateMedication(idNum, medicationToUpdate);
+        
+        // Schedule new notifications if reminders are enabled (only on native platforms)
+        if (Platform.OS !== 'web' && medicationToUpdate.reminderEnabled && medicationToUpdate.times && medicationToUpdate.times.length > 0) {
+          try {
+            await scheduleMedicationReminder({
+              id: idNum,
+              ...medicationToUpdate,
+              daysOfWeek: [0, 1, 2, 3, 4, 5, 6] // Default to all days
+            });
+          } catch (error) {
+            console.error('Error scheduling notifications:', error);
+            // Don't block the update operation if notification scheduling fails
+            Alert.alert('Warning', 'Medication updated, but there was an error scheduling reminders.');
+          }
+        }
+        
+        // Navigate back to main tabs after successful update
+        navigation.navigate('MainTabs');
+      } catch (error) {
+        console.error('Error in update process:', error);
+        Alert.alert('Error', `Failed to update medication: ${error.message || 'Unknown error'}`);
       }
-      
-      // Use navigation.goBack() to safely go back to the previous screen
-      Alert.alert('Success', 'Medication updated successfully', [
-        { text: 'OK', onPress: () => navigation.goBack() }
-      ]);
     } catch (error) {
       console.error('Error updating medication:', error);
-      Alert.alert('Update Failed', error?.message || 'Failed to update medication. Please try again.');
+      Alert.alert('Error', `Failed to update medication: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -586,7 +590,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#1E3A8A',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 16,
+    paddingTop: 16,
     paddingBottom: 16,
     paddingHorizontal: 20,
     elevation: 4,
@@ -594,7 +598,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    minHeight: Platform.OS === 'android' ? StatusBar.currentHeight + 66 : 82,
+    minHeight: 82,
   },
   headerContent: {
     flexDirection: 'row',

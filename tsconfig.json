@@ -1,8 +1,12 @@
 {
-  "extends": "./tsconfig.expo.json",
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "baseUrl": "./",
+    "baseUrl": ".",
+    "strict": true,
     "paths": {
+      "*": [
+        "src/*"
+      ],
       "expo-module-scripts/*": [
         "./node_modules/expo-module-scripts/*"
       ]
@@ -11,5 +15,9 @@
   "include": [
     "**/*.ts",
     "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/__tests__/*"
   ]
 }

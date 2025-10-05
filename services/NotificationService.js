@@ -63,15 +63,25 @@ export const scheduleMedicationReminder = async (medication) => {
 };
 
 export const cancelScheduledReminder = async (medicationId) => {
-  const allNotifications = await Notifications.getAllScheduledNotificationsAsync();
-  const notificationsToCancel = allNotifications.filter(
-    notification => notification.content.data.medicationId === medicationId
-  );
-  
-  for (const notification of notificationsToCancel) {
-    await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+  try {
+    if (Platform.OS === 'web') {
+      console.log('Skipping notification cancellation on web platform');
+      return;
+    }
+    
+    const allNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    const notificationsToCancel = allNotifications.filter(
+      notification => notification.content.data.medicationId === medicationId
+    );
+    
+    for (const notification of notificationsToCancel) {
+      await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+    }
+    console.log(`Cancelled ${notificationsToCancel.length} notifications for medication ${medicationId}`);
+  } catch (error) {
+    console.warn('Error cancelling notifications:', error.message);
+    // Continue with the update even if notification cancellation fails
   }
-  console.log(`Cancelled ${notificationsToCancel.length} notifications for medication ${medicationId}`);
 };
 
 export const requestNotificationPermissions = async () => {

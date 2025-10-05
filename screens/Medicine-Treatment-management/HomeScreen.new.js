@@ -7,8 +7,7 @@ import {
   ScrollView, 
   Alert, 
   FlatList,
-  SafeAreaView,
-  StatusBar
+  SafeAreaView
 } from 'react-native';
 import { 
   Ionicons, 
@@ -126,7 +125,7 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F3F4F6" />
+      {/* StatusBar removed */}
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View>
@@ -248,7 +247,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     padding: 20,
     backgroundColor: '#F3F4F6',
-    paddingTop: StatusBar.currentHeight || 20
+    paddingTop: 20
   },
   headerTitle: { 
     fontSize: 24, 

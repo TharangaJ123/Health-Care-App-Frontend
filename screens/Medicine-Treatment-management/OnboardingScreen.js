@@ -86,20 +86,14 @@ const OnboardingScreen = ({ navigation }) => {
       });
       animatePagination();
     } else {
-      // On last screen, reset navigation stack to Home
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Home' }],
-      });
+      // On last screen, navigate to MainTabs
+      navigation.replace('MainTabs');
     }
   };
 
   const handleSkip = () => {
-    // Reset navigation stack to Home
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Home' }],
-    });
+    // Navigate to MainTabs
+    navigation.replace('MainTabs');
   };
 
   const handleScroll = Animated.event(
@@ -440,10 +434,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 32,
     elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
   },
   skipButton: {
     backgroundColor: '#F5F5F5',
@@ -466,10 +457,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
+        boxShadow: '0 8px 24px rgba(59, 130, 246, 0.3)',
       },
       android: {
         elevation: 8,
@@ -512,10 +500,7 @@ const styles = StyleSheet.create({
     borderRadius: 70,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#1D4ED8',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
+    boxShadow: '0 12px 20px rgba(29, 78, 216, 0.3)',
     elevation: 12,
   },
   floatingElements: {
@@ -530,10 +515,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#3B82F6',
     opacity: 0.8,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)',
     elevation: 4,
   },
   dot1: {
@@ -567,10 +549,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 25,
     marginHorizontal: 8,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    boxShadow: '0 4px 8px rgba(59, 130, 246, 0.1)',
     elevation: 4,
   },
   chipText: {

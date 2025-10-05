@@ -17,7 +17,6 @@ const generateId = async () => {
     await AsyncStorage.setItem(STORAGE_KEYS.LAST_ID, newId.toString());
     return newId;
   } catch (error) {
-    console.error('Error generating ID:', error);
     return Date.now(); // Fallback to timestamp
   }
 };
@@ -47,6 +46,7 @@ const saveMedication = async (medication) => {
   }
 };
 
+// Medication CRUD operations
 const getMedications = async () => {
   try {
     const medicationsJson = await AsyncStorage.getItem(STORAGE_KEYS.MEDICATIONS);
@@ -234,18 +234,30 @@ const getMedicationsForDate = async (date) => {
       getMedications()
     ]);
     
-    return schedule
-      .filter(entry => entry.date === date)
-      .map(entry => {
-        // Find the corresponding medication
-        const medication = allMedications.find(m => m.id === entry.medicationId);
-        return {
-          ...entry,
-          name: medication ? medication.name : 'Unknown Medication',
-          dosage: medication ? medication.dosage : null,
-          instructions: medication ? medication.instructions : null
-        };
-      });
+    console.log(`[getMedicationsForDate] Looking for entries on date: ${date}`);
+    console.log(`[getMedicationsForDate] Found ${schedule.length} total schedule entries`);
+    
+    const filteredEntries = schedule.filter(entry => {
+      const matches = entry.date === date;
+      console.log(`[getMedicationsForDate] Entry ID: ${entry.id}, Date: ${entry.date}, Matches: ${matches}`);
+      return matches;
+    });
+    
+    console.log(`[getMedicationsForDate] Found ${filteredEntries.length} entries for date ${date}`);
+    
+    const result = filteredEntries.map(entry => {
+      const medication = allMedications.find(m => m.id === entry.medicationId);
+      const resultEntry = {
+        ...entry,
+        name: medication ? medication.name : 'Unknown Medication',
+        dosage: medication ? medication.dosage : null,
+        instructions: medication ? medication.instructions : null
+      };
+      console.log(`[getMedicationsForDate] Mapped entry:`, resultEntry);
+      return resultEntry;
+    });
+    
+    return result;
   } catch (error) {
     console.error('Error getting medications for date:', error);
     return [];
@@ -254,12 +266,24 @@ const getMedicationsForDate = async (date) => {
 
 const updateStatus = async (scheduleId, status) => {
   try {
+    console.log(`[updateStatus] Attempting to update schedule entry ${scheduleId} to status ${status}`);
     const schedule = await getSchedule();
-    const index = schedule.findIndex(entry => entry.id === scheduleId);
+    
+    console.log(`[updateStatus] Current schedule entries:`, schedule.map(e => ({ id: e.id, date: e.date, status: e.status })));
+    
+    const index = schedule.findIndex(entry => {
+      const match = entry.id === scheduleId;
+      console.log(`[updateStatus] Checking entry ID: ${entry.id}, matches: ${match}`);
+      return match;
+    });
     
     if (index === -1) {
-      throw new Error('Schedule entry not found');
+      console.error(`[updateStatus] Schedule entry not found. ID: ${scheduleId}, Type: ${typeof scheduleId}`);
+      console.error(`[updateStatus] Available entry IDs:`, schedule.map(e => ({ id: e.id, type: typeof e.id })));
+      throw new Error(`Schedule entry not found with ID: ${scheduleId}`);
     }
+    
+    console.log(`[updateStatus] Found entry at index ${index}, current status: ${schedule[index].status}`);
     
     schedule[index] = {
       ...schedule[index],
@@ -267,8 +291,11 @@ const updateStatus = async (scheduleId, status) => {
       updatedAt: new Date().toISOString(),
     };
     
+    console.log(`[updateStatus] Updated entry:`, schedule[index]);
+    
     await AsyncStorage.setItem(STORAGE_KEYS.MEDICATION_SCHEDULE, JSON.stringify(schedule));
     
+    console.log(`[updateStatus] Successfully updated schedule entry ${scheduleId}`);
     return schedule[index];
   } catch (error) {
     console.error('Error updating status:', error);

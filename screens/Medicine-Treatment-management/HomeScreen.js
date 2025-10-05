@@ -78,11 +78,66 @@ const HomeScreen = () => {
     }
   };
 
+  const handleDeleteMedication = async (id) => {
+    try {
+      if (!id) {
+        throw new Error('Invalid medication ID');
+      }
+      
+      // Log the ID for debugging
+      console.log('Attempting to delete medication with ID:', id, 'Type:', typeof id);
+      
+      // Show confirmation dialog
+      Alert.alert(
+        'Delete Medication',
+        'Are you sure you want to delete this medication? This will also remove all associated schedule entries.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                // Ensure we're using the correct ID format (number)
+                const medicationId = typeof id === 'string' ? parseInt(id, 10) : id;
+                console.log('Deleting medication with ID:', medicationId, 'Type:', typeof medicationId);
+                
+                await storage.deleteMedication(medicationId);
+                await fetchMedications();
+                Alert.alert('Success', 'Medication deleted successfully');
+              } catch (error) {
+                console.error('Error deleting medication:', error);
+                // Get current medications to debug
+                const meds = await storage.getMedications();
+                console.log('Available medications:', meds);
+                Alert.alert('Error', 'Failed to delete medication. Please try again.');
+              }
+            },
+          },
+        ],
+        { cancelable: true }
+      );
+    } catch (error) {
+      console.error('Error in delete confirmation:', error);
+      Alert.alert('Error', 'Failed to delete medication. Please try again.');
+    }
+  };
+
   const renderMedicationItem = ({ item }) => {
     if (!item || !item.id) return null;
     
+    // Log the item for debugging
+    console.log('Rendering medication item:', item);
+    
     return (
-    <View style={styles.medicationCard}>
+    <TouchableOpacity 
+      style={styles.medicationCard}
+      onLongPress={() => handleDeleteMedication(item.medicationId)}
+      activeOpacity={0.8}
+    >
       <View style={styles.medicationHeader}>
         <View style={styles.medicationInfo}>
           <View style={styles.medicationIconContainer}>
@@ -121,7 +176,7 @@ const HomeScreen = () => {
           <Text style={styles.actionButtonText}>Skip</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -177,12 +232,13 @@ const HomeScreen = () => {
         <View style={styles.card}>
             <View style={styles.medicationHeader}>
                 <Text style={styles.medicationTitle}>Medications for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
-                <TouchableOpacity style={styles.addMedicineButton} onPress={() => navigation.navigate('AddMedication')}>
+                
+            </View>
+            <Text style={styles.deleteHint}>⚡ Long press to delete           <TouchableOpacity style={styles.addMedicineButton} onPress={() => navigation.navigate('AddMedication')}>
                     <Feather name="plus" size={16} color="#fff" />
                     <Text style={styles.addMedicineButtonText}>Add Medicine</Text>
-                </TouchableOpacity>
-            </View>
-            <Text style={styles.deleteHint}>⚡ Long press to delete</Text>
+                </TouchableOpacity></Text>
+            
             {medications && medications.length > 0 ? (
               <FlatList
                 data={medications}
@@ -202,22 +258,47 @@ const HomeScreen = () => {
         <View style={styles.card}>
           <Text style={styles.quickActionsTitle}>Quick Actions</Text>
           <View style={styles.quickActionsContainer}>
+            {/* PillTrack */}
             <TouchableOpacity 
               style={styles.quickActionButton} 
               onPress={() => navigation.navigate('Tracker')}
             >
               <View style={[styles.quickActionIcon, {backgroundColor: '#3B82F6'}]}>
-                <Feather name="activity" size={24} color="#fff" />
+                <Feather name="trending-up" size={24} color="#fff" />
               </View>
-              <Text style={styles.quickActionText}>Medicine Tracker</Text>
+              <Text style={styles.quickActionText}>PillTrack</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.quickActionButton}>
-              <View style={[styles.quickActionIcon, {backgroundColor: '#A78BFA'}]}><Feather name="bell" size={24} color="#fff" /></View>
-              <Text style={styles.quickActionText}>Test Notification</Text>
+
+            {/* Goal */}
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Reports')}>
+              <View style={[styles.quickActionIcon, {backgroundColor: '#8B5CF6'}]}>
+                <Feather name="target" size={24} color="#fff" />
+              </View>
+              <Text style={styles.quickActionText}>Goal</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('ReminderSettings')}>
-              <View style={[styles.quickActionIcon, {backgroundColor: '#6B7280'}]}><Feather name="settings" size={24} color="#fff" /></View>
-              <Text style={styles.quickActionText}>Reminder Settings</Text>
+
+            {/* Blog */}
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => Alert.alert('Blog', 'Coming soon') }>
+              <View style={[styles.quickActionIcon, {backgroundColor: '#6B7280'}]}>
+                <Feather name="file-text" size={24} color="#fff" />
+              </View>
+              <Text style={styles.quickActionText}>Blog</Text>
+            </TouchableOpacity>
+
+            {/* Community */}
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => Alert.alert('Community', 'Coming soon') }>
+              <View style={[styles.quickActionIcon, {backgroundColor: '#F59E0B'}]}>
+                <Feather name="users" size={24} color="#fff" />
+              </View>
+              <Text style={styles.quickActionText}>Community</Text>
+            </TouchableOpacity>
+
+            {/* Appointment */}
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Appointments')}>
+              <View style={[styles.quickActionIcon, {backgroundColor: '#EC4899'}]}>
+                <Feather name="calendar" size={24} color="#fff" />
+              </View>
+              <Text style={styles.quickActionText}>Appointment</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -266,8 +347,8 @@ const styles = StyleSheet.create({
   missedButton: { backgroundColor: '#EF4444' },
   skipButton: { backgroundColor: '#F59E0B' },
   quickActionsTitle: { fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 12 },
-  quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 8 },
-  quickActionButton: { alignItems: 'center' },
+  quickActionsContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: 8 },
+  quickActionButton: { alignItems: 'center', marginVertical: 8, width: '30%' },
   quickActionIcon: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   quickActionText: { fontSize: 12, color: '#374151' }
 });

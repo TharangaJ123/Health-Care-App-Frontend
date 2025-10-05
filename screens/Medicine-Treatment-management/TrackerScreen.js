@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, SafeAreaView, StatusBar } from 'react-native';
-import * as LucideIcons from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, SafeAreaView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../utils/theme';
 import { getSchedule, getWeeklyAdherence, getAdherenceStats } from '../../utils/storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -8,10 +8,10 @@ import Header from '../../components/Header';
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
-const StatCard = ({ label, value, tint, icon: Icon }) => (
+const StatCard = ({ label, value, tint, iconName }) => (
   <View style={styles.statCard}>
     <View style={[styles.statIconWrap, { backgroundColor: `${tint}15`, borderColor: `${tint}40` }] }>
-      <Icon size={18} color={tint} />
+      <Ionicons name={iconName} size={18} color={tint} />
     </View>
     <Text style={styles.statValue}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
@@ -96,7 +96,7 @@ export default function TrackerScreen({ navigation }) {
         onBack={() => navigation.goBack()}
         rightIcon={
           <TouchableOpacity style={styles.headerActionBtn} onPress={() => navigation.navigate('Reports')}>
-            <LucideIcons.FileBarChart size={16} color="#FFFFFF" />
+            <Ionicons name="stats-chart" size={16} color="#FFFFFF" />
             <Text style={styles.headerActionText}>View Reports</Text>
           </TouchableOpacity>
         }
@@ -106,9 +106,9 @@ export default function TrackerScreen({ navigation }) {
         {/* Today's Progress */}
         <Text style={styles.sectionTitle}>Today's Progress</Text>
         <View style={styles.statsRow}>
-          <StatCard label="Taken" value={todayStats.taken} tint="#10B981" icon={LucideIcons.CheckCircle} />
-          <StatCard label="Missed" value={todayStats.missed} tint="#EF4444" icon={LucideIcons.XCircle} />
-          <StatCard label="Adherence" value={`${todayStats.adherence}%`} tint="#EF4444" icon={LucideIcons.Activity} />
+          <StatCard label="Taken" value={todayStats.taken} tint="#10B981" iconName="checkmark-circle" />
+          <StatCard label="Missed" value={todayStats.missed} tint="#EF4444" iconName="close-circle" />
+          <StatCard label="Adherence" value={`${todayStats.adherence}%`} tint="#EF4444" iconName="pulse" />
         </View>
 
         {/* Range Toggle */}
@@ -126,8 +126,8 @@ export default function TrackerScreen({ navigation }) {
         <Text style={styles.sectionTitle}>{range === 'monthly' ? 'Monthly Overview' : range === 'weekly' ? 'Weekly Overview' : "Today's Overview"}</Text>
         <View style={styles.card}>
           <View style={styles.metricGrid}>
-            <MetricTile title="Weekly Adherence" value={`${weekly.adherenceRate}%`} right={<LucideIcons.TrendingUp size={16} color="#10B981" />} />
-            <MetricTile title="Doses Taken" value={`${weekly.taken}/${weekly.total}`} right={<LucideIcons.Pill size={16} color="#1E3A8A" />} />
+            <MetricTile title="Weekly Adherence" value={`${weekly.adherenceRate}%`} right={<Ionicons name="trending-up" size={16} color="#10B981" />} />
+            <MetricTile title="Doses Taken" value={`${weekly.taken}/${weekly.total}`} right={<Ionicons name="medkit" size={16} color="#1E3A8A" />} />
           </View>
           <View style={styles.progressTrack}>
             <View style={[styles.progressBar, { width: `${weekly.adherenceRate}%` }]} />

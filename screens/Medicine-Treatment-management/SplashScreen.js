@@ -15,10 +15,11 @@ const SplashScreen = ({ navigation }) => {
   
   useEffect(() => {
     // Fade in animation
+    // Using useNativeDriver: false since opacity animations don't support native driver
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1000,
-      useNativeDriver: true,
+      useNativeDriver: false, // Set to false for opacity animations
     }).start();
     
     const timer = setTimeout(() => {
