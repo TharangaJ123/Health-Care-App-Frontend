@@ -5,169 +5,84 @@ import {
   StyleSheet,
   Dimensions,
   Animated,
-  Easing
+  Image
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
 const SplashScreen = ({ navigation }) => {
   const fadeAnim = new Animated.Value(0);
-  const scaleAnim = new Animated.Value(0.8);
   
   useEffect(() => {
     // Fade in animation
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 2,
-        tension: 40,
-        useNativeDriver: true,
-      })
-    ]).start();
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
     
     const timer = setTimeout(() => {
       navigation.replace('Onboarding');
-    }, 10000); // 10 seconds duration
+    }, 5000); // 2 seconds duration
 
     return () => clearTimeout(timer);
   }, [navigation]);
 
   return (
-    <LinearGradient
-      colors={['#1E88E5', '#1976D2', '#1565C0']}
-      style={styles.container}
-    >
-      <Animated.View 
-        style={[
-          styles.content,
-          {
-            opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }]
-          }
-        ]}
-      >
-        <View style={styles.logoContainer}>
-          <View style={styles.iconCircle}>
-            <Text style={styles.iconText}>🌬️</Text>
-          </View>
+    <View style={styles.container}>
+      <View style={styles.mainContent}>
+        <Animated.View style={[styles.logoContainer, { opacity: fadeAnim }]}>
+          <Image 
+            source={require('../../assets/onboarding/p1.png')} 
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.appName}>AtmosCare</Text>
-          <Text style={styles.tagline}>Empowering Healthier You</Text>
-        </View>
-        
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Your Personal Health Companion</Text>
-          <View style={styles.loadingDots}>
-            <Animated.View style={[styles.dot, styles.dot1, { opacity: fadeAnim }]} />
-            <Animated.View 
-              style={[
-                styles.dot, 
-                styles.dot2, 
-                { 
-                  opacity: fadeAnim,
-                  transform: [{
-                    translateY: fadeAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [10, 0]
-                    })
-                  }]
-                }
-              ]} 
-            />
-            <Animated.View style={[styles.dot, styles.dot3, { opacity: fadeAnim }]} />
-          </View>
-        </View>
-      </Animated.View>
-    </LinearGradient>
+        </Animated.View>
+      </View>
+      <View style={styles.bottomContent}>
+        <Text style={styles.caption}>Empowering Healthier You</Text>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  content: {
+  mainContent: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 80,
+  },
+  bottomContent: {
+    paddingBottom: 50,
+    alignItems: 'center',
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: height * 0.2,
-  },
-  iconCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 30,
-    borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
   },
-  iconText: {
-    fontSize: 60,
+  logoImage: {
+    width: 200,
+    height: 200,
+    resizeMode: 'contain',
+    marginBottom: 20,
   },
   appName: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: '#fff',
-    marginBottom: 12,
+    fontSize: 45,
+    fontWeight: 'bold',
+    color: '#4A6CF7',
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-    letterSpacing: 0.5,
+    marginTop: 20,
   },
-  tagline: {
-    fontSize: 20,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    fontWeight: '500',
-    letterSpacing: 0.3,
-  },
-  footer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  footerText: {
+  caption: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.85)',
-    marginBottom: 30,
+    color: '#666666',
     textAlign: 'center',
-    fontWeight: '400',
-  },
-  loadingDots: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ffffff',
-    marginHorizontal: 4,
-  },
-  dot1: {
-    opacity: 0.4,
-  },
-  dot2: {
-    opacity: 0.7,
-  },
-  dot3: {
-    opacity: 1,
+    letterSpacing: 1,
   },
 });
 

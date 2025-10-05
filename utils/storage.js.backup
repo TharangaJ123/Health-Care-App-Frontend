@@ -22,31 +22,6 @@ const generateId = async () => {
   }
 };
 
-// Medication CRUD operations
-const saveMedication = async (medication) => {
-  try {
-    const medications = await getMedications();
-    const id = await generateId();
-    const newMedication = {
-      id,
-      ...medication,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    
-    medications.push(newMedication);
-    await AsyncStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify(medications));
-    
-    // Generate schedule entries for this medication
-    await generateScheduleEntries(newMedication);
-    
-    return newMedication;
-  } catch (error) {
-    console.error('Error saving medication:', error);
-    throw error;
-  }
-};
-
 const getMedications = async () => {
   try {
     const medicationsJson = await AsyncStorage.getItem(STORAGE_KEYS.MEDICATIONS);
@@ -128,10 +103,25 @@ const deleteMedication = async (id) => {
       throw new Error('Cannot delete medication: ID is undefined or null');
     }
     
+    console.log('Deleting medication with ID:', id, 'Type:', typeof id);
     const medications = await getMedications();
-    const index = medications.findIndex(med => String(med.id) === String(id));
     
-    if (index === -1) {
+    // Convert ID to number for comparison
+    const idToCompare = typeof id === 'string' ? parseInt(id, 10) : id;
+    
+    // Find the medication to delete
+    const medicationIndex = medications.findIndex(med => {
+      // Handle both string and number IDs
+      const medId = med.id;
+      return (
+        medId === id || // Direct match
+        medId === idToCompare || // Numeric match
+        String(medId) === String(id) || // String match
+        String(medId) === String(idToCompare) // String numeric match
+      );
+    });
+    
+    if (medicationIndex === -1) {
       console.log('Medication not found. ID:', id, 'Type:', typeof id);
       console.log('Available medication IDs:', medications.map(m => `${m.id} (${typeof m.id})`));
       throw new Error(`Medication with ID ${id} not found in database`);
@@ -139,14 +129,24 @@ const deleteMedication = async (id) => {
     
     // Create new array without the medication to delete
     const updatedMedications = [...medications];
-    updatedMedications.splice(index, 1);
+    updatedMedications.splice(medicationIndex, 1);
+    
+    console.log(`Deleting medication. Before: ${medications.length}, After: ${updatedMedications.length}`);
     
     // Save the updated medications list
     await AsyncStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify(updatedMedications));
     
     // Remove all schedule entries for this medication
+    console.log('Removing schedule entries for medication ID:', id);
     await removeScheduleEntriesForMedication(id);
     
+    // Also try with numeric ID if input was a string
+    if (typeof id === 'string' && !isNaN(idToCompare)) {
+      console.log('Also checking for numeric ID:', idToCompare);
+      await removeScheduleEntriesForMedication(idToCompare);
+    }
+    
+    console.log('Successfully deleted medication with ID:', id);
     return true;
   } catch (error) {
     console.error('Error deleting medication:', error);
@@ -276,7 +276,7 @@ const updateStatus = async (scheduleId, status) => {
   }
 };
 
-const removeScheduleEntriesForMedication = async (medicationId) => {
+export const removeScheduleEntriesForMedication = async (medicationId) => {
   try {
     if (medicationId === undefined || medicationId === null) {
       console.warn('Attempted to remove schedule entries with undefined/null medicationId');
@@ -347,14 +347,7 @@ const getWeeklyAdherence = async () => {
     return await getAdherenceStats(startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]);
   } catch (error) {
     console.error('Error getting weekly adherence:', error);
-    return {
-      total: 0,
-      taken: 0,
-      missed: 0,
-      skipped: 0,
-      pending: 0,
-      adherenceRate: 0,
-    };
+    return null;
   }
 };
 
@@ -362,58 +355,75 @@ const getMonthlyAdherence = async () => {
   try {
     const endDate = new Date();
     const startDate = new Date();
-    startDate.setMonth(endDate.getMonth() - 1);
+    startDate.setDate(endDate.getDate() - 30);
     
     return await getAdherenceStats(startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]);
   } catch (error) {
     console.error('Error getting monthly adherence:', error);
-    return {
-      total: 0,
-      taken: 0,
-      missed: 0,
-      skipped: 0,
-      pending: 0,
-      adherenceRate: 0,
-    };
+    return null;
   }
 };
 
 // Utility functions
-const clearAllData = async () => {
+export const cleanupOrphanedSchedules = async () => {
   try {
-    await AsyncStorage.removeItem(STORAGE_KEYS.MEDICATIONS);
-    await AsyncStorage.removeItem(STORAGE_KEYS.MEDICATION_SCHEDULE);
-    await AsyncStorage.removeItem(STORAGE_KEYS.LAST_ID);
-    return true;
+    const medications = await getMedications();
+    const schedule = await getSchedule();
+    
+    const medicationIds = new Set(medications.map(med => med.id));
+    const validSchedule = schedule.filter(entry => medicationIds.has(entry.medicationId));
+    
+    await AsyncStorage.setItem(STORAGE_KEYS.MEDICATION_SCHEDULE, JSON.stringify(validSchedule));
+    
+    return schedule.length - validSchedule.length; // Return number of cleaned entries
   } catch (error) {
-    console.error('Error clearing all data:', error);
-    return false;
+    console.error('Error cleaning up orphaned schedules:', error);
+    throw error;
   }
 };
 
-const clearSomeMedications = async () => {
+const clearAllData = async () => {
+  try {
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.MEDICATIONS,
+      STORAGE_KEYS.MEDICATION_SCHEDULE,
+      STORAGE_KEYS.LAST_ID,
+    ]);
+    return true;
+  } catch (error) {
+    console.error('Error clearing all data:', error);
+    throw error;
+  }
+};
+
+export const clearSomeMedications = async () => {
   try {
     const medications = await getMedications();
-    const keepMedications = medications.filter((_, index) => index % 2 === 0);
-    await AsyncStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify(keepMedications));
+    // Keep only the first 2 medications, remove the rest
+    const medicationsToKeep = medications.slice(0, 2);
+    await AsyncStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify(medicationsToKeep));
+    
+    // Clean up orphaned schedule entries
+    await cleanupOrphanedSchedules();
+    
+    console.log(`Cleared ${medications.length - medicationsToKeep.length} medications, kept ${medicationsToKeep.length}`);
     return true;
   } catch (error) {
     console.error('Error clearing some medications:', error);
-    return false;
+    throw error;
   }
 };
 
 const exportData = async () => {
   try {
-    const [medications, schedule] = await Promise.all([
-      getMedications(),
-      getSchedule()
-    ]);
+    const medications = await getMedications();
+    const schedule = await getSchedule();
     
     return {
       medications,
       schedule,
-      exportedAt: new Date().toISOString(),
+      exportDate: new Date().toISOString(),
+      version: '1.0',
     };
   } catch (error) {
     console.error('Error exporting data:', error);
@@ -436,7 +446,7 @@ const importData = async (data) => {
     console.error('Error importing data:', error);
     throw error;
   }
-};
+}
 
 // Add manual medication entry (for as-needed medications)
 const addManualMedicationEntry = async (medicationId, date, time, status = 'taken') => {
@@ -450,7 +460,7 @@ const addManualMedicationEntry = async (medicationId, date, time, status = 'take
       date,
       time,
       status,
-      isManual: true,
+      manual: true,
       createdAt: new Date().toISOString(),
     };
     
@@ -462,58 +472,4 @@ const addManualMedicationEntry = async (medicationId, date, time, status = 'take
     console.error('Error adding manual medication entry:', error);
     throw error;
   }
-};
-
-// Export all functions
-export {
-  // Medication CRUD
-  saveMedication,
-  getMedications,
-  getMedicationById,
-  updateMedication,
-  deleteMedication,
-  
-  // Schedule management
-  getSchedule,
-  getMedicationsForDate,
-  updateStatus,
-  
-  // Statistics
-  getAdherenceStats,
-  getWeeklyAdherence,
-  getMonthlyAdherence,
-  
-  // Utility
-  clearAllData,
-  clearSomeMedications,
-  exportData,
-  importData,
-  addManualMedicationEntry
-};
-
-// Default export for backward compatibility
-export default {
-  // Medication CRUD
-  saveMedication,
-  getMedications,
-  getMedicationById,
-  updateMedication,
-  deleteMedication,
-  
-  // Schedule management
-  getSchedule,
-  getMedicationsForDate,
-  updateStatus,
-  
-  // Statistics
-  getAdherenceStats,
-  getWeeklyAdherence,
-  getMonthlyAdherence,
-  
-  // Utility
-  clearAllData,
-  clearSomeMedications,
-  exportData,
-  importData,
-  addManualMedicationEntry
 };

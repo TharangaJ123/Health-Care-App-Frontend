@@ -11,8 +11,10 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { getMedications, updateMedication, deleteMedication } from '../../utils/storage';
+import { scheduleMedicationReminder, cancelScheduledReminder } from '../../services/NotificationService';
 import { getSampleMedicationCategories, getMedicationColors } from '../../utils/sampleData';
 import { theme } from '../../utils/theme';
 import Header from '../../components/Header';
@@ -61,14 +63,18 @@ const EditMedicationScreen = ({ navigation, route }) => {
   const loadMedication = async () => {
     try {
       const medications = await getMedications();
-      const medication = medications.find(med => med.id === medicationId);
+      // Convert medicationId to number for comparison
+      const idToFind = typeof medicationId === 'string' ? parseInt(medicationId, 10) : medicationId;
+      const medication = medications.find(med => med.id === idToFind);
       
       if (medication) {
         setMedicationData(medication);
         setSelectedFrequency(medication.frequency);
       } else {
+        console.log('Medication not found. Looking for ID:', idToFind, 'Type:', typeof idToFind);
+        console.log('Available medications:', medications.map(m => ({ id: m.id, name: m.name })));
         Alert.alert('Error', 'Medication not found', [
-          { text: 'OK', onPress: () => navigation.pop() }
+          { text: 'OK', onPress: () => navigation.goBack() }
         ]);
       }
     } catch (error) {
@@ -164,18 +170,40 @@ const EditMedicationScreen = ({ navigation, route }) => {
         startDate: normalizedStart,
         times: medicationData.frequency === 'as-needed' ? [] : sanitizedTimes,
         instructions: medicationData.instructions || medicationData.notes,
+        updatedAt: new Date().toISOString(),
       };
+      
       if (medicationToUpdate.frequency !== 'as-needed' && medicationToUpdate.times.length === 0) {
         Alert.alert('Error', 'Please add at least one valid reminder time (e.g., 08:00 AM).');
         return;
       }
       
       // Ensure numeric ID
-      const idNum = typeof medicationId === 'string' ? Number(medicationId) : medicationId;
+      const idNum = typeof medicationId === 'string' ? parseInt(medicationId, 10) : medicationId;
+      
+      // Cancel existing notifications for this medication
+      await cancelScheduledReminder(idNum);
+      
+      // Update the medication in storage
       await updateMedication(idNum, medicationToUpdate);
-      // Use navigation.pop() to safely go back to the previous screen
+      
+      // Schedule new notifications if reminders are enabled
+      if (medicationToUpdate.reminderEnabled && medicationToUpdate.times && medicationToUpdate.times.length > 0) {
+        try {
+          await scheduleMedicationReminder({
+            id: idNum,
+            ...medicationToUpdate,
+            daysOfWeek: [0, 1, 2, 3, 4, 5, 6] // Default to all days
+          });
+        } catch (error) {
+          console.error('Error scheduling notifications:', error);
+          // Don't block the update operation if notification scheduling fails
+        }
+      }
+      
+      // Use navigation.goBack() to safely go back to the previous screen
       Alert.alert('Success', 'Medication updated successfully', [
-        { text: 'OK', onPress: () => navigation.pop() }
+        { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (error) {
       console.error('Error updating medication:', error);
@@ -189,15 +217,18 @@ const EditMedicationScreen = ({ navigation, route }) => {
     console.log('Medication name:', medicationData.name);
     
     try {
+      // Convert medicationId to number for consistency
+      const idToDelete = typeof medicationId === 'string' ? parseInt(medicationId, 10) : medicationId;
+      
       // First, verify we can find the medication in storage
       console.log('Fetching all medications to verify...');
       const allMeds = await getMedications();
       console.log('All medications in storage:', allMeds.map(m => ({ id: m.id, name: m.name, type: typeof m.id })));
       
-      const medicationExists = allMeds.some(m => 
-        m.id === medicationId || 
-        String(m.id) === String(medicationId)
-      );
+      const medicationExists = allMeds.some(m => m.id === idToDelete);
+      
+      // Cancel all notifications for this medication
+      await cancelScheduledReminder(idToDelete);
       
       if (!medicationExists) {
         console.error('Medication not found in storage');
@@ -216,18 +247,18 @@ const EditMedicationScreen = ({ navigation, route }) => {
             onPress: async () => {
               try {
                 console.log('User confirmed deletion. Calling deleteMedication...');
-                await deleteMedication(medicationId);
+                await deleteMedication(idToDelete);
                 console.log('Medication deleted successfully, navigating back...');
                 Alert.alert('Success', 'Medication deleted successfully', [
-                  { text: 'OK', onPress: () => navigation.pop() }
+                  { text: 'OK', onPress: () => navigation.goBack() }
                 ]);
               } catch (error) {
                 console.error('Error in delete operation:', {
                   error: error.toString(),
                   message: error.message,
                   stack: error.stack,
-                  medicationId,
-                  medicationType: typeof medicationId
+                  medicationId: idToDelete,
+                  medicationType: typeof idToDelete
                 });
                 
                 // Try to get the current state of storage
@@ -279,20 +310,20 @@ const EditMedicationScreen = ({ navigation, route }) => {
                             const parsed = JSON.parse(currentData || '[]');
                             const filtered = parsed.filter(m => 
                               m && 
-                              m.id !== medicationId && 
-                              String(m.id) !== String(medicationId)
+                              m.id !== idToDelete && 
+                              String(m.id) !== String(idToDelete)
                             );
                             
                             await AsyncStorage.setItem(medicationsKey, JSON.stringify(filtered));
                             Alert.alert('Success', 'Medication was force removed', [
-                              { text: 'OK', onPress: () => navigation.pop() }
+                              { text: 'OK', onPress: () => navigation.goBack() }
                             ]);
                           } catch (parseError) {
                             console.error('Failed to parse medications:', parseError);
                             // Last resort: clear all medication data
                             await AsyncStorage.removeItem(medicationsKey);
                             Alert.alert('Success', 'Medication data has been reset', [
-                              { text: 'OK', onPress: () => navigation.pop() }
+                              { text: 'OK', onPress: () => navigation.goBack() }
                             ]);
                           }
                         } else {
@@ -330,7 +361,7 @@ const EditMedicationScreen = ({ navigation, route }) => {
     <SafeAreaView style={styles.container}>
       <Header 
         title="Edit Medication" 
-        onBack={() => navigation.pop()}
+        onBack={() => navigation.goBack()}
         rightIcon={
           <TouchableOpacity
             style={styles.deleteButton}
@@ -527,7 +558,7 @@ const EditMedicationScreen = ({ navigation, route }) => {
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.cancelButton}
-          onPress={() => navigation.pop()}
+          onPress={() => navigation.goBack()}
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>

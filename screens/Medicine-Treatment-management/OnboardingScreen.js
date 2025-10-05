@@ -10,7 +10,7 @@ import {
   Animated,
   Easing,
   Platform,
-  StatusBar,
+  // StatusBar,
   SafeAreaView
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -86,19 +86,19 @@ const OnboardingScreen = ({ navigation }) => {
       });
       animatePagination();
     } else {
-      // On last screen, reset navigation stack to HomeScreen
+      // On last screen, reset navigation stack to Home
       navigation.reset({
         index: 0,
-        routes: [{ name: 'HomeScreen' }],
+        routes: [{ name: 'Home' }],
       });
     }
   };
 
   const handleSkip = () => {
-    // Use navigation.replace to prevent adding to the navigation stack
+    // Reset navigation stack to Home
     navigation.reset({
       index: 0,
-      routes: [{ name: 'HomeScreen' }],
+      routes: [{ name: 'Home' }],
     });
   };
 
@@ -186,7 +186,7 @@ const OnboardingScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      {/* <StatusBar barStyle="light-content" backgroundColor="#1E3A8A" translucent={false} /> */}
       
       <Animated.ScrollView
         ref={scrollViewRef}
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    paddingTop: Platform.OS === 'android' ? 30 : 0,
   },
   slide: {
     width,

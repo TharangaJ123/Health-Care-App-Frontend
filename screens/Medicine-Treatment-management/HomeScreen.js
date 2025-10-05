@@ -1,26 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
+import { 
+  View, 
   Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  SafeAreaView,
-  StatusBar,
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView, 
+  Alert, 
   FlatList,
-  Platform,
+  SafeAreaView,
+  StatusBar
 } from 'react-native';
+import { 
+  Ionicons, 
+  Feather, 
+  MaterialCommunityIcons 
+} from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Calendar } from 'react-native-calendars';
-import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
-import { 
-  getMedicationsForDate, 
-  updateStatus, 
-  getSchedule, 
-  deleteMedication, 
-  removeScheduleEntriesForMedication 
-} from '../../utils/storage';
+import * as storage from '../../utils/storage';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -28,138 +25,113 @@ const HomeScreen = () => {
   const [medications, setMedications] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
   const [isOnline, setIsOnline] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchMedications = useCallback(async () => {
     try {
-      const meds = await getMedicationsForDate(selectedDate);
-      setMedications(meds);
+      setIsRefreshing(true);
+      const meds = await storage.getMedicationsForDate(selectedDate);
+      setMedications(Array.isArray(meds) ? meds : []);
     } catch (error) {
-      Alert.alert('Error', 'Could not fetch medications.');
+      console.error('Error fetching medications:', error);
+      Alert.alert('Error', 'Failed to load medications');
+      setMedications([]);
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [selectedDate]);
-
-  const fetchMarkedDates = useCallback(async () => {
-    const schedule = await getSchedule();
-    const marks = {};
-    schedule.forEach(item => {
-      marks[item.date] = { marked: true, dotColor: '#10B981' };
-    });
-    marks[selectedDate] = { ...marks[selectedDate], selected: true, selectedColor: '#2563EB' };
-    setMarkedDates(marks);
   }, [selectedDate]);
 
   useFocusEffect(
     useCallback(() => {
-      fetchMedications();
-      fetchMarkedDates();
-      // Simulate online status
-      setIsOnline(Math.random() > 0.2);
-    }, [fetchMedications, fetchMarkedDates])
+      let isActive = true;
+      
+      const loadData = async () => {
+        try {
+          await fetchMedications();
+          // Simulate online status
+          if (isActive) {
+            setIsOnline(Math.random() > 0.2);
+          }
+        } catch (error) {
+          console.error('Error in useFocusEffect:', error);
+        }
+      };
+      
+      loadData();
+      
+      return () => {
+        isActive = false;
+      };
+    }, [fetchMedications])
   );
 
-    const handleStatusUpdate = async (id, status) => {
+  const handleStatusUpdate = async (id, status) => {
     try {
-      await updateStatus(id, status);
-      fetchMedications(); // Refresh list
+      if (!id) {
+        throw new Error('Invalid medication ID');
+      }
+      await storage.updateStatus(id, status);
+      await fetchMedications();
     } catch (error) {
-      Alert.alert('Error', 'Could not update status.');
+      console.error('Error updating status:', error);
+      Alert.alert('Error', error.message || 'Failed to update status');
     }
   };
 
-    const handleDelete = (item) => {
-    Alert.alert(
-      'Delete Medication',
-      `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          onPress: async () => {
-            try {
-              // First, remove the schedule entries for this medication
-              await removeScheduleEntriesForMedication(item.medicationId);
-              
-              // Then delete the medication itself
-              await deleteMedication(item.medicationId);
-              
-              // Show success message
-              Alert.alert(
-                'Success',
-                `"${item.name}" has been deleted successfully.`,
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => {
-                      // Refresh the medication list
-                      fetchMedications();
-                      // Also refresh the marked dates
-                      fetchMarkedDates();
-                    }
-                  },
-                ]
-              );
-            } catch (error) {
-              console.error('Delete error:', error);
-              Alert.alert(
-                'Error',
-                `Could not delete "${item.name}". Please try again.\n\nError: ${error.message}`,
-                [{ text: 'OK' }]
-              );
-            }
-          },
-          style: 'destructive',
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
-  const renderMedicationItem = ({ item }) => (
+  const renderMedicationItem = ({ item }) => {
+    if (!item || !item.id) return null;
+    
+    return (
     <View style={styles.medicationCard}>
-        <View style={styles.medicationHeader}>
-            <Text style={styles.medicationName}>{item.name}</Text>
-            <View style={styles.medicationStatus}>
-                <Feather name={item.status === 'pending' ? 'clock' : 'check-circle'} size={16} color={item.status === 'pending' ? '#F59E0B' : '#10B981'} />
-                <Text style={[styles.statusText, { color: item.status === 'pending' ? '#F59E0B' : '#10B981' }]}>
-                    {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                </Text>
-            </View>
-        </View>
+      <View style={styles.medicationHeader}>
         <View style={styles.medicationInfo}>
-            <View style={styles.medicationIconContainer}>
-                <MaterialIcons name="medication" size={24} color="#2563EB" />
-            </View>
-            <View style={{ flex: 1 }}>
-                <Text style={styles.medicationTime}>{item.time}</Text>
-                {item.dosage && <Text style={styles.medicationDosage}>{item.dosage}</Text>}
-            </View>
-            <TouchableOpacity onPress={() => handleDelete(item)} style={styles.deleteButton}>
-                <Feather name="trash-2" size={20} color="#EF4444" />
-            </TouchableOpacity>
+          <View style={styles.medicationIconContainer}>
+            <MaterialCommunityIcons name="pill" size={24} color="#2563EB" />
+          </View>
+          <View>
+            <Text style={styles.medicationName}>{item.name}</Text>
+            <Text style={styles.medicationDosage}>{item.dosage}</Text>
+            <Text style={styles.medicationTime}>{item.time}</Text>
+          </View>
         </View>
-        <View style={styles.actionButtons}>
-            <TouchableOpacity style={[styles.actionButton, styles.takenButton]} onPress={() => handleStatusUpdate(item.id, 'taken')}>
-                <Feather name="check" size={16} color="#fff" />
-                <Text style={styles.actionButtonText}>Taken</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, styles.missedButton]} onPress={() => handleStatusUpdate(item.id, 'missed')}>
-                <Feather name="x" size={16} color="#fff" />
-                <Text style={styles.actionButtonText}>Missed</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, styles.skipButton]} onPress={() => handleStatusUpdate(item.id, 'skipped')}>
-                <Feather name="skip-forward" size={16} color="#fff" />
-                <Text style={styles.actionButtonText}>Skip</Text>
-            </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={() => navigation.navigate('EditMedication', { medicationId: item.medicationId })}>
+          <Feather name="edit-2" size={20} color="#6B7280" />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.takenButton]}
+          onPress={() => handleStatusUpdate(item.id, 'taken')}
+        >
+          <Feather name="check" size={16} color="#fff" />
+          <Text style={styles.actionButtonText}>Taken</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.missedButton]}
+          onPress={() => handleStatusUpdate(item.id, 'missed')}
+        >
+          <Feather name="x" size={16} color="#fff" />
+          <Text style={styles.actionButtonText}>Missed</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.skipButton]}
+          onPress={() => handleStatusUpdate(item.id, 'skipped')}
+        >
+          <Feather name="skip-forward" size={16} color="#fff" />
+          <Text style={styles.actionButtonText}>Skip</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
+};
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F3F4F6" />
+    <View style={styles.container}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#F3F4F6" 
+        translucent={false} 
+      />
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View>
@@ -211,14 +183,19 @@ const HomeScreen = () => {
                 </TouchableOpacity>
             </View>
             <Text style={styles.deleteHint}>⚡ Long press to delete</Text>
-            {medications.length > 0 ? (
-                <FlatList
-                    data={medications}
-                    renderItem={renderMedicationItem}
-                    keyExtractor={(item) => item.id.toString()}
-                />
+            {medications && medications.length > 0 ? (
+              <FlatList
+                data={medications}
+                renderItem={renderMedicationItem}
+                keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+                refreshing={isRefreshing}
+                onRefresh={fetchMedications}
+                ListEmptyComponent={
+                  <Text style={styles.noMedicationText}>No medications for this day.</Text>
+                }
+              />
             ) : (
-                <Text style={styles.noMedicationText}>No medications for this day.</Text>
+              <Text style={styles.noMedicationText}>No medications for this day.</Text>
             )}
         </View>
 
@@ -245,13 +222,20 @@ const HomeScreen = () => {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F3F4F6' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20 },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    padding: 20,
+    backgroundColor: '#F3F4F6',
+    paddingTop: StatusBar.currentHeight || 20
+  },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#111827' },
   onlineStatus: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
@@ -285,7 +269,7 @@ const styles = StyleSheet.create({
   quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 8 },
   quickActionButton: { alignItems: 'center' },
   quickActionIcon: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  quickActionText: { fontSize: 12, color: '#374151' },
+  quickActionText: { fontSize: 12, color: '#374151' }
 });
 
 export default HomeScreen;

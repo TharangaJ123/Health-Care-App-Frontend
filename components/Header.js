@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const Header = ({ title, onBack, rightIcon }) => {
@@ -27,7 +27,7 @@ const Header = ({ title, onBack, rightIcon }) => {
 const styles = StyleSheet.create({
   header: {
     backgroundColor: '#1E3A8A',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 16,
+    paddingTop: Platform.OS === 'android' ? 50 : 16,
     paddingBottom: 16,
     paddingHorizontal: 20,
     elevation: 4,
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    minHeight: Platform.OS === 'android' ? StatusBar.currentHeight + 66 : 82,
+    minHeight: Platform.OS === 'android' ? 106 : 82,
   },
   headerContent: {
     flexDirection: 'row',

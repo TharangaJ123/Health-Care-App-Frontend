@@ -15,6 +15,7 @@ import { saveMedication } from '../../utils/storage';
 import { theme } from '../../utils/theme';
 import { getSampleMedicationCategories, getMedicationColors } from '../../utils/sampleData';
 import Header from '../../components/Header';
+import { scheduleMedicationReminder } from '../../services/NotificationService';
 
 const AddMedicationScreen = ({ navigation }) => {
   const [medicationData, setMedicationData] = useState({
@@ -131,7 +132,23 @@ const AddMedicationScreen = ({ navigation }) => {
         instructions: medicationData.instructions || medicationData.notes,
       };
       
-      await saveMedication(medicationToSave);
+      const savedMedication = await saveMedication(medicationToSave);
+      
+      // Schedule notifications if reminders are enabled
+      if (savedMedication.reminderEnabled && savedMedication.times && savedMedication.times.length > 0) {
+        try {
+          // Add daysOfWeek for notification scheduling
+          const medicationForNotification = {
+            ...savedMedication,
+            daysOfWeek: [0, 1, 2, 3, 4, 5, 6] // Default to all days
+          };
+          await scheduleMedicationReminder(medicationForNotification);
+        } catch (error) {
+          console.error('Error scheduling notifications:', error);
+          // Don't block the save operation if notification scheduling fails
+        }
+      }
+      
       navigation.goBack();
     } catch (error) {
       console.error('Error saving medication:', error);
