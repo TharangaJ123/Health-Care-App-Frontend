@@ -7,7 +7,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { requestNotificationPermissions, handleNotificationResponse } from './services/NotificationService';
+import { requestNotificationPermissions, handleNotificationResponse, clearNonMedicationNotifications } from './services/NotificationService';
 
 // Import screens
 import SplashScreen from './screens/Medicine-Treatment-management/SplashScreen';
@@ -178,6 +178,10 @@ const App = () => {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       handleNotificationResponse
     );
+
+    // Clean up non-medication notifications on app start
+    clearNonMedicationNotifications();
+
     return () => subscription.remove();
   }, []);
 

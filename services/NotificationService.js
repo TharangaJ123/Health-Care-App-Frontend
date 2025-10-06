@@ -5,11 +5,37 @@ import { schedulePushNotification } from '../utils/notifications';
 
 // Configure how notifications should be displayed when the app is in the foreground
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
+  handleNotification: async (notification) => {
+    const data = notification.request.content.data;
+
+    // Only show notifications for medication reminders
+    if (data && data.type === 'medication-reminder') {
+      return {
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      };
+    } else {
+      // Don't show notifications for other types
+      return {
+        shouldShowAlert: false,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      };
+    }
+  },
+  handleNotificationResponse: async (response) => {
+    const { notification } = response;
+    const data = notification.request.content.data;
+
+    // Only handle medication reminder notifications
+    if (data && data.type === 'medication-reminder') {
+      console.log('Handling medication reminder notification response:', data);
+      // The app will handle navigation based on the medicationId in the data
+    } else {
+      console.log('Ignoring non-medication notification:', data?.type);
+    }
+  },
 });
 
 export const scheduleMedicationReminder = async (medication) => {
@@ -106,6 +132,30 @@ export const requestNotificationPermissions = async () => {
     console.log('Failed to get push token for push notification!');
     return false;
   }
-  
+
   return true;
+};
+
+export const clearNonMedicationNotifications = async () => {
+  try {
+    if (Platform.OS === 'web') {
+      console.log('Skipping notification cleanup on web platform');
+      return;
+    }
+
+    const allNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    const nonMedicationNotifications = allNotifications.filter(
+      notification => !notification.content.data?.type || notification.content.data.type !== 'medication-reminder'
+    );
+
+    for (const notification of nonMedicationNotifications) {
+      await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+    }
+
+    console.log(`Cleared ${nonMedicationNotifications.length} non-medication notifications`);
+    return nonMedicationNotifications.length;
+  } catch (error) {
+    console.warn('Error clearing non-medication notifications:', error.message);
+    return 0;
+  }
 };
