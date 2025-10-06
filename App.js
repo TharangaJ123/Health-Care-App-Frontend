@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { Alert } from 'react-native';
 import LoginScreen from './feature/auth/LoginScreen';
 import SignupScreen from './feature/auth/SignupScreen';
 import ForgotPasswordScreen from './feature/auth/ForgotPasswordScreen';
@@ -32,7 +33,7 @@ function HealthStack() {
 }
 
 // Auth Stack
-function AuthStack({ onLogin }) {
+function AuthStack({ onLogin, onSignupSuccess }) {
   return (
     <Stack.Navigator
       screenOptions={{
@@ -40,10 +41,10 @@ function AuthStack({ onLogin }) {
       }}
     >
       <Stack.Screen name="Login">
-        {({ navigation }) => <LoginScreen navigation={navigation} onLogin={onLogin} />}
+        {({ navigation }) => <LoginScreen navigation={navigation} onLogin={(email, password) => onLogin(email, password, navigation)} />}
       </Stack.Screen>
       <Stack.Screen name="Signup">
-        {({ navigation }) => <SignupScreen navigation={navigation} onSignupSuccess={onLogin} />}
+        {({ navigation }) => <SignupScreen navigation={navigation} onSignupSuccess={onSignupSuccess} />}
       </Stack.Screen>
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>
@@ -52,9 +53,56 @@ function AuthStack({ onLogin }) {
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [registeredUsers, setRegisteredUsers] = React.useState([]);
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
+  const handleLogin = (email, password, navigation) => {
+    // Validate credentials
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return false;
+    }
+
+    if (!email.includes('@')) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return false;
+    }
+
+    // For demo purposes, check against registered users or use basic validation
+    const userExists = registeredUsers.some(user => user.email === email && user.password === password);
+
+    if (userExists || (email === 'demo@example.com' && password === 'password123')) {
+      setIsAuthenticated(true);
+      return true;
+    } else {
+      // Show enhanced alert with navigation option
+      Alert.alert(
+        'Invalid Credentials',
+        'The email or password you entered is not valid. Please check your credentials and try again, or create a new account if you don\'t have one.',
+        [
+          {
+            text: 'Try Again',
+            style: 'cancel',
+          },
+          {
+            text: 'Create Account',
+            onPress: () => {
+              if (navigation) {
+                navigation.navigate('Signup');
+              }
+            }
+          }
+        ]
+      );
+      return false;
+    }
+  };
+
+  const handleSignupSuccess = (userData) => {
+    // Store the new user data for login validation
+    if (userData) {
+      setRegisteredUsers(prev => [...prev, userData]);
+    }
+    console.log('Signup successful - user data stored for login');
   };
 
   const handleLogout = () => {
@@ -73,7 +121,7 @@ export default function App() {
             <Stack.Screen name="HealthApp" component={HealthStack} />
           ) : (
             <Stack.Screen name="Auth">
-              {() => <AuthStack onLogin={handleLogin} />}
+              {() => <AuthStack onLogin={handleLogin} onSignupSuccess={handleSignupSuccess} />}
             </Stack.Screen>
           )}
         </Stack.Navigator>

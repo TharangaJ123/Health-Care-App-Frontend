@@ -8,10 +8,12 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { authStyles } from './styles/AuthStyles';
+import { validateField, validateForm } from './validationUtils';
 
 const SignupScreen = ({ navigation, onSignupSuccess }) => {
   const [userType, setUserType] = useState('patient');
@@ -27,6 +29,8 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [focusedField, setFocusedField] = useState('');
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [touchedFields, setTouchedFields] = useState({});
 
   const doctorOccupations = [
     'General Practitioner',
@@ -48,58 +52,78 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+
+    // Clear validation error if field is being edited and has content
+    if (value && validationErrors[field]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
   };
 
-  const validateForm = () => {
-    const { firstName, email, password, confirmPassword, phoneNumber, occupation } = formData;
+  const handleFieldBlur = (fieldName) => {
+    setFocusedField('');
 
-    if (!firstName || !email || !password || !confirmPassword || !phoneNumber) {
-      Alert.alert('Error', 'Please fill in all required fields');
-      return false;
+    // Mark field as touched
+    setTouchedFields(prev => ({
+      ...prev,
+      [fieldName]: true
+    }));
+
+    // Validate field when blurred if it has content
+    if (formData[fieldName]) {
+      const result = validateField(fieldName, formData[fieldName], formData);
+      setValidationErrors(prev => ({
+        ...prev,
+        [fieldName]: result.message
+      }));
     }
-
-    if (userType === 'doctor' && !occupation) {
-      Alert.alert('Error', 'Please select your medical occupation');
-      return false;
-    }
-
-    if (!email.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return false;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
-      return false;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return false;
-    }
-
-    if (phoneNumber.length < 10) {
-      Alert.alert('Error', 'Please enter a valid phone number');
-      return false;
-    }
-
-    return true;
   };
 
   const handleSignup = async () => {
-    if (!validateForm()) return;
+    // Mark all fields as touched
+    setTouchedFields({
+      firstName: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+      phoneNumber: true,
+      occupation: userType === 'doctor'
+    });
+
+    // Validate form using utility function
+    const validation = validateForm(formData, userType);
+    setValidationErrors(validation.errors);
+
+    if (!validation.isValid) {
+      return;
+    }
 
     setLoading(true);
 
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Call the onSignupSuccess prop to update the authentication state
+
+      // Prepare user data for login validation
+      const userData = {
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        userType: userType,
+        phoneNumber: formData.phoneNumber,
+        occupation: formData.occupation
+      };
+
+      // Call the onSignupSuccess prop with user data for login validation
       if (onSignupSuccess) {
-        onSignupSuccess();
+        onSignupSuccess(userData);
       }
-      
+
+      // Navigate directly to login screen after successful signup
+      navigation.navigate('Login');
+
     } catch (error) {
       console.error('Signup error:', error);
       Alert.alert('Error', 'Failed to create account. Please try again.');
@@ -187,15 +211,29 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
             <TextInput
               style={[
                 authStyles.input,
-                focusedField === 'firstName' && authStyles.inputFocused
+                focusedField === 'firstName' && authStyles.inputFocused,
+                validationErrors.firstName && touchedFields.firstName ? authStyles.inputError :
+                (formData.firstName && !validationErrors.firstName && touchedFields.firstName) ? authStyles.inputSuccess : authStyles.inputNeutral
               ]}
               placeholder="Your full name"
               value={formData.firstName}
               onChangeText={(value) => updateFormData('firstName', value)}
               onFocus={() => setFocusedField('firstName')}
-              onBlur={() => setFocusedField('')}
+              onBlur={() => handleFieldBlur('firstName')}
               autoCapitalize="words"
             />
+            {formData.firstName && (
+              <View style={authStyles.validationIcon}>
+                <Ionicons
+                  name={validationErrors.firstName && touchedFields.firstName ? 'close-circle' : 'checkmark-circle'}
+                  size={20}
+                  color={validationErrors.firstName && touchedFields.firstName ? '#dc3545' : '#28a745'}
+                />
+              </View>
+            )}
+            {validationErrors.firstName && touchedFields.firstName && (
+              <Text style={authStyles.errorText}>{validationErrors.firstName}</Text>
+            )}
           </View>
 
           {/* Email Input */}
@@ -204,17 +242,31 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
             <TextInput
               style={[
                 authStyles.input,
-                focusedField === 'email' && authStyles.inputFocused
+                focusedField === 'email' && authStyles.inputFocused,
+                validationErrors.email && touchedFields.email ? authStyles.inputError :
+                (formData.email && !validationErrors.email && touchedFields.email) ? authStyles.inputSuccess : authStyles.inputNeutral
               ]}
               placeholder="Enter your email"
               value={formData.email}
               onChangeText={(value) => updateFormData('email', value)}
               onFocus={() => setFocusedField('email')}
-              onBlur={() => setFocusedField('')}
+              onBlur={() => handleFieldBlur('email')}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
             />
+            {formData.email && (
+              <View style={authStyles.validationIcon}>
+                <Ionicons
+                  name={validationErrors.email && touchedFields.email ? 'close-circle' : 'checkmark-circle'}
+                  size={20}
+                  color={validationErrors.email && touchedFields.email ? '#dc3545' : '#28a745'}
+                />
+              </View>
+            )}
+            {validationErrors.email && touchedFields.email && (
+              <Text style={authStyles.errorText}>{validationErrors.email}</Text>
+            )}
           </View>
 
           {/* Phone Number Input */}
@@ -223,15 +275,29 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
             <TextInput
               style={[
                 authStyles.input,
-                focusedField === 'phoneNumber' && authStyles.inputFocused
+                focusedField === 'phoneNumber' && authStyles.inputFocused,
+                validationErrors.phoneNumber && touchedFields.phoneNumber ? authStyles.inputError :
+                (formData.phoneNumber && !validationErrors.phoneNumber && touchedFields.phoneNumber) ? authStyles.inputSuccess : authStyles.inputNeutral
               ]}
               placeholder="Enter your phone number"
               value={formData.phoneNumber}
               onChangeText={(value) => updateFormData('phoneNumber', value)}
               onFocus={() => setFocusedField('phoneNumber')}
-              onBlur={() => setFocusedField('')}
+              onBlur={() => handleFieldBlur('phoneNumber')}
               keyboardType="phone-pad"
             />
+            {formData.phoneNumber && (
+              <View style={authStyles.validationIcon}>
+                <Ionicons
+                  name={validationErrors.phoneNumber && touchedFields.phoneNumber ? 'close-circle' : 'checkmark-circle'}
+                  size={20}
+                  color={validationErrors.phoneNumber && touchedFields.phoneNumber ? '#dc3545' : '#28a745'}
+                />
+              </View>
+            )}
+            {validationErrors.phoneNumber && touchedFields.phoneNumber && (
+              <Text style={authStyles.errorText}>{validationErrors.phoneNumber}</Text>
+            )}
           </View>
 
           {/* Doctor Occupation Field */}
@@ -261,13 +327,15 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
                 style={[
                   authStyles.input,
                   focusedField === 'password' && authStyles.inputFocused,
+                  validationErrors.password && touchedFields.password ? authStyles.inputError :
+                  (formData.password && !validationErrors.password && touchedFields.password) ? authStyles.inputSuccess : authStyles.inputNeutral,
                   { paddingRight: 50 }
                 ]}
                 placeholder="Create a password"
                 value={formData.password}
                 onChangeText={(value) => updateFormData('password', value)}
                 onFocus={() => setFocusedField('password')}
-                onBlur={() => setFocusedField('')}
+                onBlur={() => handleFieldBlur('password')}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -280,13 +348,21 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
                 }}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <Ionicons
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={24}
-                  color="#666"
-                />
+                
               </TouchableOpacity>
             </View>
+            {formData.password && (
+              <View style={[authStyles.validationIcon, { right: 15 }]}>
+                <Ionicons
+                  name={validationErrors.password && touchedFields.password ? 'close-circle' : 'checkmark-circle'}
+                  size={20}
+                  color={validationErrors.password && touchedFields.password ? '#dc3545' : '#28a745'}
+                />
+              </View>
+            )}
+            {validationErrors.password && touchedFields.password && (
+              <Text style={authStyles.errorText}>{validationErrors.password}</Text>
+            )}
           </View>
 
           {/* Confirm Password Input */}
@@ -297,13 +373,15 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
                 style={[
                   authStyles.input,
                   focusedField === 'confirmPassword' && authStyles.inputFocused,
+                  validationErrors.confirmPassword && touchedFields.confirmPassword ? authStyles.inputError :
+                  (formData.confirmPassword && !validationErrors.confirmPassword && touchedFields.confirmPassword) ? authStyles.inputSuccess : authStyles.inputNeutral,
                   { paddingRight: 50 }
                 ]}
                 placeholder="Confirm your password"
                 value={formData.confirmPassword}
                 onChangeText={(value) => updateFormData('confirmPassword', value)}
                 onFocus={() => setFocusedField('confirmPassword')}
-                onBlur={() => setFocusedField('')}
+                onBlur={() => handleFieldBlur('confirmPassword')}
                 secureTextEntry={!showConfirmPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -316,13 +394,21 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
                 }}
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                <Ionicons
-                  name={showConfirmPassword ? 'eye-off' : 'eye'}
-                  size={24}
-                  color="#666"
-                />
+                
               </TouchableOpacity>
             </View>
+            {formData.confirmPassword && (
+              <View style={[authStyles.validationIcon, { right: 15 }]}>
+                <Ionicons
+                  name={validationErrors.confirmPassword && touchedFields.confirmPassword ? 'close-circle' : 'checkmark-circle'}
+                  size={20}
+                  color={validationErrors.confirmPassword && touchedFields.confirmPassword ? '#dc3545' : '#28a745'}
+                />
+              </View>
+            )}
+            {validationErrors.confirmPassword && touchedFields.confirmPassword && (
+              <Text style={authStyles.errorText}>{validationErrors.confirmPassword}</Text>
+            )}
           </View>
         </View>
 
@@ -346,10 +432,14 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
 
         {/* Google Signup Button */}
         <TouchableOpacity
-          style={authStyles.googleButton}
+          style={[authStyles.googleButton, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}
           onPress={handleGoogleSignup}
         >
-          <Ionicons name="logo-google" size={24} color="#4285f4" />
+          <Image
+            source={{ uri: 'https://accounts.google.com/favicon.ico' }}
+            style={{ width: 24, height: 24, marginRight: 12 }}
+            resizeMode="contain"
+          />
           <Text style={authStyles.googleButtonText}>Continue with Google</Text>
         </TouchableOpacity>
 

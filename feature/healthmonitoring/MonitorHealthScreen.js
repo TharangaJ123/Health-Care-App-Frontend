@@ -435,7 +435,7 @@ const MonitorHealthScreen = ({ navigation }) => {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            <Ionicons name="arrow-back" size={24} color="#2c3e50" />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Health Monitor</Text>
@@ -584,243 +584,7 @@ const MonitorHealthScreen = ({ navigation }) => {
         </View>
         
 
-        {/* Heart Rate Variability Chart */}
-        {renderChart(
-          'HEART RATE VARIABILITY', 
-          heartRateVariability, 
-          getYAxisLabels(20, 50), 
-          getLinePoints(heartRateVariability, width - 40, 100, 20, 3.33), 
-          '#FFAA00', 
-          ' ms',
-          'SDNN: ' + (heartRateVariability.reduce((a, b) => a + b, 0) / heartRateVariability.length).toFixed(1) + ' ms'
-        )}
-        
-        {/* Blood Pressure Chart with MAP */}
-        <View style={[styles.chartContainer, styles.elevatedCard]}>
-          <View style={styles.chartHeader}>
-            <View>
-              <Text style={styles.chartTitle}>BLOOD PRESSURE TREND</Text>
-              <Text style={styles.chartSubtitle}>Last 24 hours • Systolic/Diastolic</Text>
-            </View>
-            <View style={styles.chartValueContainer}>
-              <View style={styles.trendIndicator}>
-                <Ionicons name="trending-up" size={16} color="#FF3D71" />
-              </View>
-              <Text style={[styles.chartValue, { color: '#00E5FF' }]}>
-                {bloodPressure.systolic}/{bloodPressure.diastolic} mmHg
-              </Text>
-            </View>
-          </View>
-          
-          <View style={styles.chartWrapper}>
-            <View style={styles.yAxis}>
-              {bpYAxis.map((item, index) => (
-                <Text key={index} style={styles.yAxisLabel}>
-                  {item.value}
-                </Text>
-              ))}
-            </View>
-            
-            <View style={styles.chart}>
-              <svg width="100%" height="100%" viewBox={`0 0 ${width - 80} 120`}>
-                {/* Gradient for systolic */}
-                <defs>
-                  <linearGradient id="systolicGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#00E5FF20" />
-                    <stop offset="100%" stopColor="#1E1E1E00" />
-                  </linearGradient>
-                  <linearGradient id="diastolicGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#8F9BB320" />
-                    <stop offset="100%" stopColor="#1E1E1E00" />
-                  </linearGradient>
-                  <filter id="bpGlow" x="-30%" y="-30%" width="160%" height="160%">
-                    <feGaussianBlur stdDeviation="2" result="blur" />
-                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                  </filter>
-                </defs>
-                
-                {/* Fill areas */}
-                <path 
-                  d={`${bpSystolicPoints} L ${width-80},120 L 0,120 Z`} 
-                  fill="url(#systolicGradient)"
-                />
-                <path 
-                  d={`${bpDiastolicPoints} L ${width-80},120 L 0,120 Z`} 
-                  fill="url(#diastolicGradient)"
-                  opacity="0.5"
-                />
-                
-                {/* Grid lines */}
-                {bpYAxis.map((item, index) => (
-                  <line 
-                    key={`grid-${index}`}
-                    x1="0" 
-                    y1={item.y} 
-                    x2="100%" 
-                    y2={item.y} 
-                    stroke="#2D2D2D" 
-                    strokeWidth="1"
-                  />
-                ))}
-                
-                {/* Target zones */}
-                <rect 
-                  x="0" 
-                  y={120 - ((120 - 60) * 1.25)} 
-                  width="100%" 
-                  height={((140-90) * 1.25)} 
-                  fill="#00E09610" 
-                  rx="2"
-                  ry="2"
-                />
-                
-                {/* Systolic line */}
-                <path 
-                  d={bpSystolicPoints} 
-                  fill="none" 
-                  stroke="#00E5FF" 
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  filter="url(#bpGlow)"
-                />
-                
-                {/* Diastolic line */}
-                <path 
-                  d={bpDiastolicPoints} 
-                  fill="none" 
-                  stroke="#8F9BB3" 
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeDasharray="4 2"
-                  filter="url(#bpGlow)"
-                />
-                
-                {/* Current value indicators */}
-                <circle 
-                  cx="100%" 
-                  cy={120 - ((bloodPressure.systolic - 60) * 1.25)} 
-                  r="5" 
-                  fill="#FFFFFF"
-                  stroke="#00E5FF"
-                  strokeWidth="2"
-                />
-                <circle 
-                  cx="100%" 
-                  cy={120 - ((bloodPressure.diastolic - 60) * 1.25)} 
-                  r="5" 
-                  fill="#FFFFFF"
-                  stroke="#8F9BB3"
-                  strokeWidth="2"
-                />
-                
-                {/* MAP (Mean Arterial Pressure) line */}
-                <path 
-                  d={getLinePoints(
-                    bloodPressureData.systolic.map((s, i) => 
-                      (s + bloodPressureData.diastolic[i] * 2) / 3
-                    ), 
-                    width - 40, 
-                    100, 
-                    60, 
-                    1.25
-                  )} 
-                  fill="none" 
-                  stroke="#FFAA00" 
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeDasharray="3 3"
-                />
-                
-                <text 
-                  x="10" 
-                  y="15" 
-                  fill="#8F9BB3" 
-                  fontSize="10" 
-                  fontWeight="500"
-                >
-                  mmHg
-                </text>
-              </svg>
-              
-              <View style={styles.xAxis}>
-                {timeLabels.map((label, index) => (
-                  <Text key={index} style={styles.xAxisLabel}>
-                    {index % 2 === 0 ? label : ''}
-                  </Text>
-                ))}
-              </View>
-              
-              <View style={styles.chartMinMax}>
-                <View style={styles.minMaxItem}>
-                  <Text style={styles.minMaxLabel}>SYS</Text>
-                  <Text style={styles.minMaxValue}>
-                    {Math.min(...bloodPressureData.systolic).toFixed(0)}-{Math.max(...bloodPressureData.systolic).toFixed(0)}
-                  </Text>
-                </View>
-                <View style={styles.minMaxItem}>
-                  <Text style={[styles.minMaxLabel, { color: '#8F9BB3' }]}>DIA</Text>
-                  <Text style={[styles.minMaxValue, { color: '#8F9BB3' }]}>
-                    {Math.min(...bloodPressureData.diastolic).toFixed(0)}-{Math.max(...bloodPressureData.diastolic).toFixed(0)}
-                  </Text>
-                </View>
-                <View style={styles.minMaxItem}>
-                  <Text style={[styles.minMaxLabel, { color: '#FFAA00' }]}>MAP</Text>
-                  <Text style={[styles.minMaxValue, { color: '#FFAA00' }]}>
-                    {((bloodPressure.systolic + bloodPressure.diastolic * 2) / 3).toFixed(0)}
-                  </Text>
-                </View>
-              </View>
-              
-              <View style={styles.legend}>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendIcon, { backgroundColor: '#00E5FF' }]} />
-                  <Text style={styles.legendText}>Systolic</Text>
-                </View>
-                <View style={[styles.legendItem, { marginLeft: 12 }]}>
-                  <View style={[styles.legendIcon, { 
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    borderColor: '#8F9BB3'
-                  }]} />
-                  <Text style={styles.legendText}>Diastolic</Text>
-                </View>
-                <View style={[styles.legendItem, { marginLeft: 12 }]}>
-                  <View style={[styles.legendIcon, { 
-                    backgroundColor: 'transparent',
-                    borderWidth: 1.5,
-                    borderColor: '#FFAA00',
-                    borderStyle: 'dashed'
-                  }]} />
-                  <Text style={[styles.legendText, { color: '#FFAA00' }]}>MAP</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-        
-        {/* Oxygen Level Chart */}
-        {renderChart(
-          'BLOOD OXYGEN (SpO₂)', 
-          oxygenData, 
-          getYAxisLabels(90, 100), 
-          getLinePoints(oxygenData, width - 40, 100, 90, 10), 
-          oxygenStatus.color, 
-          '%',
-          `Avg: ${(oxygenData.reduce((a, b) => a + b, 0) / oxygenData.length).toFixed(1)}%`
-        )}
-        
-        {/* Respiratory Rate Chart */}
-        {renderChart(
-          'RESPIRATORY RATE', 
-          respiratoryData, 
-          getYAxisLabels(10, 25), 
-          getLinePoints(respiratoryData, width - 40, 100, 10, 6.67), 
-          '#8F5FF8', 
-          ' bpm',
-          `Current: ${respiratoryRate.toFixed(1)} bpm`
-        )}
+       
         
         {/* Controls */}
         <View style={styles.controls}>
@@ -878,7 +642,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#FFFFFF',
-    paddingTop: 16,
+    paddingTop: 50,
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
@@ -902,13 +666,12 @@ const styles = StyleSheet.create({
   },
   headerTitleContainer: {
     flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#111827',
-    fontFamily: 'System',
-    letterSpacing: 0.5,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2c3e50',
   },
   headerSubtitle: {
     fontSize: 13,
@@ -961,13 +724,13 @@ const styles = StyleSheet.create({
   // Filter styles
   filterContainer: {
     flexDirection: 'row',
-    backgroundColor: '#252525',
+    backgroundColor: '#d1d1d1',
     borderRadius: 12,
     padding: 4,
     marginVertical: 16,
     marginHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#d1d1d1',
   },
   filterButton: {
     flex: 1,
@@ -985,7 +748,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   filterButtonText: {
-    color: '#8F9BB3',
+    color: '#030303',
     fontWeight: '600',
     fontSize: 14,
     letterSpacing: 0.5,

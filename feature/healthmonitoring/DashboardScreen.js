@@ -323,26 +323,29 @@ const DashboardScreen = ({ navigation }) => {
 
           {/* Buttons Section */}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={styles.normalButton}
+            <TouchableOpacity
+              style={styles.iconButton}
               onPress={handleAddHealthData}
             >
-              <Text style={styles.normalButtonText}>Add Health Data</Text>
+              <Ionicons name="add-circle" size={24} color="#fff" style={styles.buttonIcon} />
+              <Text style={styles.iconButtonText}>Add Health Data</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.normalButton, styles.dashboardButton]}
+            <TouchableOpacity
+              style={[styles.iconButton, styles.dashboardButton]}
               onPress={handleViewDashboard}
             >
-              <Text style={styles.normalButtonText}>Health Data History</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.normalButton, styles.monitorButton]}
-              onPress={handlemonitorhealth}
-            >
-              <Text style={styles.normalButtonText}>Monitor Health</Text>
+              <Ionicons name="stats-chart" size={24} color="#fff" style={styles.buttonIcon} />
+              <Text style={styles.iconButtonText}>Health History</Text>
             </TouchableOpacity>
 
+            <TouchableOpacity
+              style={[styles.iconButton, styles.monitorButton]}
+              onPress={handlemonitorhealth}
+            >
+              <Ionicons name="pulse" size={24} color="#fff" style={styles.buttonIcon} />
+              <Text style={styles.iconButtonText}>Monitor Health</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
@@ -455,7 +458,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: 12,
+    marginTop: 20,
+  },
+  iconButton: {
+    flex: 1,
+    backgroundColor: '#3498db',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 80,
+  },
+  buttonIcon: {
+    marginBottom: 6,
+  },
+  iconButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 16,
   },
   normalButton: {
     backgroundColor: '#3498db',

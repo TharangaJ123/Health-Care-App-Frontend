@@ -8,9 +8,11 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { authStyles } from './styles/AuthStyles';
+import { validateField } from './validationUtils';
 
 const LoginScreen = ({ navigation, onLogin }) => {
   const [userType, setUserType] = useState('patient');
@@ -20,29 +22,82 @@ const LoginScreen = ({ navigation, onLogin }) => {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [touchedFields, setTouchedFields] = useState({});
+  const [loginError, setLoginError] = useState('');
+
+  const validateSingleField = (fieldName, value) => {
+    const result = validateField(fieldName, value);
+    setValidationErrors(prev => ({
+      ...prev,
+      [fieldName]: result.message
+    }));
+    return result.isValid;
+  };
+
+  const handleFieldChange = (fieldName, value) => {
+    // Update field value
+    if (fieldName === 'email') setEmail(value);
+    else if (fieldName === 'password') setPassword(value);
+
+    // Clear validation error if field is being edited and has content
+    if (value && validationErrors[fieldName]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [fieldName]: ''
+      }));
+    }
+  };
+
+  const handleFieldBlur = (fieldName) => {
+    if (fieldName === 'email') setEmailFocused(false);
+    else if (fieldName === 'password') setPasswordFocused(false);
+
+    // Mark field as touched
+    setTouchedFields(prev => ({
+      ...prev,
+      [fieldName]: true
+    }));
+
+    // Validate field when blurred if it has content
+    const value = fieldName === 'email' ? email : password;
+    if (value) {
+      validateSingleField(fieldName, value);
+    }
+  };
 
   const handleLogin = async () => {
+    // Mark all fields as touched
+    setTouchedFields({ email: true, password: true });
+
+    // Validate all fields
+    const emailValid = validateSingleField('email', email);
+    const passwordValid = validateSingleField('password', password);
+
+    if (!emailValid || !passwordValid) {
+      return;
+    }
+
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
-    if (!email.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-
     setLoading(true);
-    
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Call the onLogin prop to update the authentication state
-      if (onLogin) {
-        onLogin();
+      // Call the onLogin prop with email and password for validation
+      const loginSuccess = onLogin(email, password);
+
+      if (loginSuccess) {
+        // Login successful - navigation will be handled by App.js
+        console.log('Login successful');
+        setLoginError(''); // Clear any previous error
+      } else {
+        // Login failed - show error message below toggle button
+        setLoginError('Invalid email or password. Please check your credentials and try again.');
       }
-      
+
     } catch (error) {
       console.error('Login error:', error);
       Alert.alert('Error', 'Failed to login. Please try again.');
@@ -127,6 +182,14 @@ const LoginScreen = ({ navigation, onLogin }) => {
           </TouchableOpacity>
         </View>
 
+        {/* Login Error Message */}
+        {loginError ? (
+          <View style={authStyles.errorContainer}>
+            <Ionicons name="alert-circle" size={20} color="#dc3545" style={{ marginRight: 8 }} />
+            <Text style={authStyles.loginErrorText}>{loginError}</Text>
+          </View>
+        ) : null}
+
         {/* Login Form */}
         <View style={authStyles.form}>
           {/* Email Input */}
@@ -135,17 +198,31 @@ const LoginScreen = ({ navigation, onLogin }) => {
             <TextInput
               style={[
                 authStyles.input,
-                emailFocused && authStyles.inputFocused
+                emailFocused && authStyles.inputFocused,
+                validationErrors.email && touchedFields.email ? authStyles.inputError :
+                (email && !validationErrors.email && touchedFields.email) ? authStyles.inputSuccess : authStyles.inputNeutral
               ]}
               placeholder="Enter your email"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(value) => handleFieldChange('email', value)}
               onFocus={() => setEmailFocused(true)}
-              onBlur={() => setEmailFocused(false)}
+              onBlur={() => handleFieldBlur('email')}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
             />
+            {email && (
+              <View style={authStyles.validationIcon}>
+                <Ionicons
+                  name={validationErrors.email && touchedFields.email ? 'close-circle' : 'checkmark-circle'}
+                  size={20}
+                  color={validationErrors.email && touchedFields.email ? '#dc3545' : '#28a745'}
+                />
+              </View>
+            )}
+            {validationErrors.email && touchedFields.email && (
+              <Text style={authStyles.errorText}>{validationErrors.email}</Text>
+            )}
           </View>
 
           {/* Password Input */}
@@ -156,13 +233,15 @@ const LoginScreen = ({ navigation, onLogin }) => {
                 style={[
                   authStyles.input,
                   passwordFocused && authStyles.inputFocused,
+                  validationErrors.password && touchedFields.password ? authStyles.inputError :
+                  (password && !validationErrors.password && touchedFields.password) ? authStyles.inputSuccess : authStyles.inputNeutral,
                   { paddingRight: 50 }
                 ]}
                 placeholder="Enter your password"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(value) => handleFieldChange('password', value)}
                 onFocus={() => setPasswordFocused(true)}
-                onBlur={() => setPasswordFocused(false)}
+                onBlur={() => handleFieldBlur('password')}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -175,13 +254,21 @@ const LoginScreen = ({ navigation, onLogin }) => {
                 }}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <Ionicons
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={24}
-                  color="#666"
-                />
+                
               </TouchableOpacity>
             </View>
+            {password && (
+              <View style={[authStyles.validationIcon, { right: 15 }]}>
+                <Ionicons
+                  name={validationErrors.password && touchedFields.password ? 'close-circle' : 'checkmark-circle'}
+                  size={20}
+                  color={validationErrors.password && touchedFields.password ? '#dc3545' : '#28a745'}
+                />
+              </View>
+            )}
+            {validationErrors.password && touchedFields.password && (
+              <Text style={authStyles.errorText}>{validationErrors.password}</Text>
+            )}
           </View>
 
           {/* Forgot Password */}
@@ -216,32 +303,11 @@ const LoginScreen = ({ navigation, onLogin }) => {
           style={[authStyles.googleButton, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}
           onPress={handleGoogleLogin}
         >
-          <View style={{ position: 'relative', width: 24, height: 24, marginRight: 12 }}>
-            <Ionicons 
-              name="logo-google" 
-              size={24} 
-              color="#EA4335" 
-              style={{ position: 'absolute', top: 0, left: 0 }}
-            />
-            <Ionicons 
-              name="logo-google" 
-              size={24} 
-              color="#FBBC05" 
-              style={{ position: 'absolute', top: 0, left: 0, opacity: 0.8 }}
-            />
-            <Ionicons 
-              name="logo-google" 
-              size={24} 
-              color="#34A853" 
-              style={{ position: 'absolute', top: 0, left: 0, opacity: 0.8 }}
-            />
-            <Ionicons 
-              name="logo-google" 
-              size={24} 
-              color="#4285F4" 
-              style={{ position: 'absolute', top: 0, left: 0, opacity: 0.8 }}
-            />
-          </View>
+          <Image
+            source={{ uri: 'https://accounts.google.com/favicon.ico' }}
+            style={{ width: 24, height: 24, marginRight: 12 }}
+            resizeMode="contain"
+          />
           <Text style={authStyles.googleButtonText}>Continue with Google</Text>
         </TouchableOpacity>
 
