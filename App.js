@@ -12,6 +12,7 @@ import HealthDataInputScreen from './feature/healthmonitoring/HealthDataInputScr
 import HealthDataHistoryScreen from './feature/healthmonitoring/HealthDataHistoryScreen';
 import MonitorHealthScreen from './feature/healthmonitoring/MonitorHealthScreen';
 import { HealthDataProvider } from './context/HealthDataContext';
+import ApiService from './services/ApiService';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -55,44 +56,48 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [registeredUsers, setRegisteredUsers] = React.useState([]);
 
-  const handleLogin = (email, password, navigation) => {
-    // Validate credentials
-    if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
-      return false;
-    }
+  const handleLogin = async (email, password, navigation) => {
+    try {
+      console.log('🔐 Attempting login with Firebase backend...');
+      console.log('📧 Email:', email);
 
-    if (!email.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return false;
-    }
+      // Call the actual Firebase backend API
+      const response = await ApiService.login({ email, password });
 
-    // For demo purposes, check against registered users or use basic validation
-    const userExists = registeredUsers.some(user => user.email === email && user.password === password);
+      if (response.success) {
+        console.log('✅ Login successful!');
+        console.log('👤 User:', response.user.email);
 
-    if (userExists || (email === 'demo@example.com' && password === 'password123')) {
-      setIsAuthenticated(true);
-      return true;
-    } else {
-      // Show enhanced alert with navigation option
+        // Set authentication state - this will trigger navigation to HealthApp
+        setIsAuthenticated(true);
+
+        // Store user data for the app to use
+        console.log('🔄 Authentication state updated, navigation will switch to HealthApp');
+
+        return true;
+      } else {
+        console.log('❌ Login failed:', response.error);
+
+        // Show error message
+        Alert.alert(
+          'Login Failed',
+          response.error || 'Invalid email or password. Please check your credentials and try again.',
+          [{ text: 'OK' }]
+        );
+
+        return false;
+      }
+
+    } catch (error) {
+      console.error('❌ Login error:', error);
+
+      // Show error message
       Alert.alert(
-        'Invalid Credentials',
-        'The email or password you entered is not valid. Please check your credentials and try again, or create a new account if you don\'t have one.',
-        [
-          {
-            text: 'Try Again',
-            style: 'cancel',
-          },
-          {
-            text: 'Create Account',
-            onPress: () => {
-              if (navigation) {
-                navigation.navigate('Signup');
-              }
-            }
-          }
-        ]
+        'Login Error',
+        error.message || 'Failed to login. Please check your connection and try again.',
+        [{ text: 'OK' }]
       );
+
       return false;
     }
   };

@@ -14,6 +14,7 @@ import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { authStyles } from './styles/AuthStyles';
 import { validateField, validateForm } from './validationUtils';
+import ApiService from '../../services/ApiService';
 
 const SignupScreen = ({ navigation, onSignupSuccess }) => {
   const [userType, setUserType] = useState('patient');
@@ -103,30 +104,55 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
     setLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Prepare user data for login validation
+      // Prepare user data for Firebase backend
       const userData = {
         email: formData.email,
         password: formData.password,
-        firstName: formData.firstName,
-        userType: userType,
+        name: formData.firstName, // Use firstName as name in backend
         phoneNumber: formData.phoneNumber,
+        userType: userType,
         occupation: formData.occupation
       };
 
-      // Call the onSignupSuccess prop with user data for login validation
-      if (onSignupSuccess) {
-        onSignupSuccess(userData);
+      console.log('🚀 Sending registration data to Firebase backend...');
+      console.log('📧 Email:', userData.email);
+      console.log('🔗 Backend URL: http://localhost:5000/api/auth/register');
+
+      // Call ApiService to register user in Firebase backend
+      const response = await ApiService.register(userData);
+
+      console.log('✅ Registration successful!');
+      console.log('📦 Response:', response);
+
+      if (response.success) {
+        // Call the onSignupSuccess prop to notify parent component
+        if (onSignupSuccess) {
+          onSignupSuccess(userData);
+        }
+
+        console.log('✅ Registration successful! Email verification sent.');
+
+        // Show success message with email verification info
+        Alert.alert(
+          'Registration Successful!',
+          'Account created successfully! Please check your email and click the verification link before logging in.',
+          [
+            { text: 'OK', onPress: () => navigation.navigate('Login') }
+          ]
+        );
       }
 
-      // Navigate directly to login screen after successful signup
-      navigation.navigate('Login');
-
     } catch (error) {
-      console.error('Signup error:', error);
-      Alert.alert('Error', 'Failed to create account. Please try again.');
+      console.error('❌ Registration error:', error);
+
+      let errorMessage = 'Failed to create account. Please try again.';
+      if (error.message.includes('Email is already registered')) {
+        errorMessage = 'This email is already registered. Please use a different email or try logging in.';
+      } else if (error.message.includes('network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+
+      Alert.alert('Registration Failed', errorMessage);
     } finally {
       setLoading(false);
     }

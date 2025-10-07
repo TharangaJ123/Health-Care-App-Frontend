@@ -11,6 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import ApiService from '../../services/ApiService';
 import { authStyles } from './styles/AuthStyles';
 import { validateField } from './validationUtils';
 
@@ -86,21 +87,31 @@ const LoginScreen = ({ navigation, onLogin }) => {
     setLoading(true);
 
     try {
-      // Call the onLogin prop with email and password for validation
-      const loginSuccess = onLogin(email, password);
+      console.log('🔐 Attempting login with backend...');
+      console.log('📧 Email:', email);
+      console.log('🔗 Backend URL: http://localhost:5000/api/auth/login');
 
-      if (loginSuccess) {
-        // Login successful - navigation will be handled by App.js
-        console.log('Login successful');
+      // Call ApiService to authenticate with Firebase backend
+      const response = await ApiService.login({ email, password });
+
+      if (response.success) {
+        console.log('✅ Login successful with Firebase backend');
+        console.log('👤 User:', response.user.email);
+
+        // Call the onLogin prop to handle successful login (for navigation)
+        if (onLogin) {
+          await onLogin(email, password, navigation);
+        }
+
         setLoginError(''); // Clear any previous error
       } else {
-        // Login failed - show error message below toggle button
+        console.log('❌ Login failed');
         setLoginError('Invalid email or password. Please check your credentials and try again.');
       }
 
     } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Error', 'Failed to login. Please try again.');
+      console.error('❌ Login error:', error);
+      setLoginError(error.message || 'Login failed. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
