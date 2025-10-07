@@ -86,14 +86,14 @@ const OnboardingScreen = ({ navigation }) => {
       });
       animatePagination();
     } else {
-      // On last screen, navigate to MainTabs
-      navigation.replace('MainTabs');
+      // On last screen, navigate to Home
+      navigation.replace('Home');
     }
   };
 
   const handleSkip = () => {
-    // Navigate to MainTabs
-    navigation.replace('MainTabs');
+    // Navigate to Home
+    navigation.replace('Home');
   };
 
   const handleScroll = Animated.event(

@@ -203,8 +203,8 @@ const EditMedicationScreen = ({ navigation, route }) => {
           }
         }
         
-        // Navigate back to main tabs after successful update
-        navigation.navigate('MainTabs');
+        // Navigate back to Home after successful update
+        navigation.navigate('Home');
       } catch (error) {
         console.error('Error in update process:', error);
         Alert.alert('Error', `Failed to update medication: ${error.message || 'Unknown error'}`);

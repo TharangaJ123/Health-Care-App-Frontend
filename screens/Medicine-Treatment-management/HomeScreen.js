@@ -348,7 +348,11 @@ const HomeScreen = () => {
           
           {medications && medications.length > 0 ? (
             <View>
-              {medications.map((item) => renderMedicationItem({ item }))}
+              {medications.map((item) => (
+                <View key={item.id || item.medicationId || Math.random()}>
+                  {renderMedicationItem({ item })}
+                </View>
+              ))}
             </View>
           ) : (
             <Text style={styles.noMedicationText}>No medications for this day.</Text>
