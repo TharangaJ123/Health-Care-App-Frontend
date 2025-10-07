@@ -104,7 +104,6 @@ const ReportsScreen = ({ navigation }) => {
       const startDate = new Date();
       
       if (selectedPeriod === 'day') {
-        // single day
         startDate.setDate(endDate.getDate());
       } else if (selectedPeriod === 'week') {
         startDate.setDate(endDate.getDate() - 7);
@@ -124,11 +123,9 @@ const ReportsScreen = ({ navigation }) => {
         adherencePercentage: Math.round(stats.adherenceRate || stats.adherencePercentage || 0),
       });
       
-      // Reset series on period switch to avoid stale visuals
       setWeeklyData([]);
       setMonthlyData([]);
 
-      // Build simple week/month arrays if needed elsewhere
       if (selectedPeriod === 'week') {
         const weekly = [];
         for (let i = 6; i >= 0; i--) {
@@ -200,13 +197,11 @@ const ReportsScreen = ({ navigation }) => {
         return;
       }
 
-      // Lookback windows
       const today = new Date();
       const dayStr = (d) => d.toISOString().split('T')[0];
       const d30 = new Date(today); d30.setDate(today.getDate() - 30);
       const last30 = schedule.filter(e => new Date(e.date) >= d30 && new Date(e.date) <= today);
 
-      // Day adherence map
       const byDate = new Map();
       for (const e of last30) {
         const k = e.date;
@@ -214,7 +209,6 @@ const ReportsScreen = ({ navigation }) => {
         byDate.get(k).push(e);
       }
 
-      // Streak: consecutive days from today with 100% adherence (no missed/skipped among due)
       let streak = 0;
       for (let i = 0; i < 30; i++) {
         const d = new Date(); d.setDate(today.getDate() - i);
@@ -226,7 +220,6 @@ const ReportsScreen = ({ navigation }) => {
         if (!missedAny && due.length > 0) streak += 1; else break;
       }
 
-      // Time-of-day buckets
       const bucketStats = windows.map(w => ({ ...w, taken: 0, due: 0 }));
       for (const e of last30) {
         const mins = timeToMinutes(e.time);
@@ -240,7 +233,6 @@ const ReportsScreen = ({ navigation }) => {
       const bestWindow = withRates.reduce((a, b) => (b.rate > a.rate ? b : a), withRates[0] || { rate: 0, label: '—' });
       const worstWindow = withRates.reduce((a, b) => (b.rate < a.rate ? b : a), withRates[0] || { rate: 0, label: '—' });
 
-      // Day-of-week effects
       const dowStats = Array.from({ length: 7 }, (_, i) => ({ day: i, taken: 0, due: 0 }));
       for (const e of last30) {
         const dt = new Date(e.date);
@@ -253,7 +245,6 @@ const ReportsScreen = ({ navigation }) => {
       const worstDayObj = dowRates.reduce((a, b) => (b.rate < a.rate ? b : a), dowRates[0] || { rate: 0, day: 0 });
       const worstDay = labels[worstDayObj.day] || '—';
 
-      // Medication-specific misses
       const medIndex = new Map(medications.map(m => [Number(m.id), m]));
       const medAgg = new Map();
       for (const e of last30) {
@@ -270,9 +261,7 @@ const ReportsScreen = ({ navigation }) => {
         if (rate > worstRate) { worstRate = rate; topMissMedication = medIndex.get(Number(mid))?.name || `Medication ${mid}`; }
       }
 
-      // Recommendations
       const rec = [];
-      // Risk alert using 14-day trend delta if available
       if (trend14.length === 14) {
         const first7 = trend14.slice(0, 7).reduce((s, x) => s + x.pct, 0) / 7;
         const last7 = trend14.slice(7).reduce((s, x) => s + x.pct, 0) / 7;
@@ -280,21 +269,15 @@ const ReportsScreen = ({ navigation }) => {
         if (delta <= -10) rec.push(`Adherence dropped ${Math.abs(delta)}% vs last week — consider earlier reminders or simplifying evening routine.`);
         if (delta >= 10) rec.push(`Great momentum: +${delta}% vs last week — keep the current routine!`);
       }
-      // Time-of-day optimization
       if (worstWindow && bestWindow && (bestWindow.rate - worstWindow.rate) >= 10 && worstWindow.due >= 3) {
         rec.push(`Shift doses in ${worstWindow.label} toward ${bestWindow.label} (historically +${Math.round(bestWindow.rate - worstWindow.rate)}% adherence).`);
       }
-      // Habit cue
       if (bestWindow?.cue) rec.push(`Anchor a dose to ${bestWindow.cue} (${bestWindow.label}) — your best window.`);
-      // Day-of-week support
       if (worstDayObj?.due >= 3 && worstDayObj.rate <= 80) rec.push(`${worstDay} has lower adherence — add a stronger reminder or caregiver check-in.`);
-      // Med-specific nudge
       if (topMissMedication !== '—') rec.push(`Focus on ${topMissMedication} — most missed over the last 30 days.`);
-      // Streak nudges
       if (streak >= 3 && streak < 7) rec.push(`Nice ${streak}-day streak — aim for 7 days to reach higher weekly adherence.`);
       if (streak >= 7) rec.push(`Strong streak of ${streak} days — excellent consistency!`);
 
-      // Consistency score from variability (use trend14 variability proxy)
       const sd = stddev(trend14.map(x => x.pct));
       const consistency = sd < 10 ? 'High' : sd < 20 ? 'Medium' : 'Low';
 
@@ -308,7 +291,6 @@ const ReportsScreen = ({ navigation }) => {
         recommendations: rec.slice(0, 5),
       });
     } catch (e) {
-      // fail soft
     }
   };
 
@@ -345,7 +327,6 @@ const ReportsScreen = ({ navigation }) => {
         });
       }
       setTrend14(arr);
-      // Calculate trend delta (last 7 days vs first 7 days)
       if (arr.length >= 14) {
         const first7 = arr.slice(0, 7).reduce((s, x) => s + x.pct, 0) / 7;
         const last7 = arr.slice(7).reduce((s, x) => s + x.pct, 0) / 7;
@@ -380,7 +361,6 @@ const ReportsScreen = ({ navigation }) => {
         ? insights.recommendations
         : getRecommendations(adherenceData.adherencePercentage).split('\n').map(s => s.replace(/^•\s?/, ''));
 
-      // Minimal HTML report printable to PDF
       const html = `
       <html>
         <head>
@@ -454,7 +434,6 @@ const ReportsScreen = ({ navigation }) => {
         </body>
       </html>`;
 
-      // Web: open print dialog (user can save as PDF)
       if (Platform.OS === 'web') {
         await Print.printAsync({ html });
         return;
@@ -466,7 +445,6 @@ const ReportsScreen = ({ navigation }) => {
 
       if (Platform.OS === 'android') {
         try {
-          // Try to save to Downloads via SAF
           const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
           if (permissions.granted) {
             const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
@@ -476,7 +454,6 @@ const ReportsScreen = ({ navigation }) => {
             return;
           }
         } catch (e) {
-          // fall back to share
         }
       }
 
@@ -574,7 +551,6 @@ const ReportsScreen = ({ navigation }) => {
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Period Selector: Daily / Weekly / Monthly */}
         <View style={styles.periodSelector}>
           {['day', 'week', 'month'].map(period => (
             <TouchableOpacity
@@ -595,7 +571,6 @@ const ReportsScreen = ({ navigation }) => {
           ))}
         </View>
         
-        {/* Adherence Overview card with badge */}
         <View style={styles.section}>
           <View style={styles.overviewHeaderRow}>
             <Text style={styles.sectionTitle}>Adherence Overview</Text>
@@ -645,7 +620,6 @@ const ReportsScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* 14-Day Trend */}
         <View style={styles.section}>
           <View style={styles.trendHeaderRow}>
             <Text style={styles.sectionTitle}>14-Day Trend</Text>
@@ -666,7 +640,6 @@ const ReportsScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Distribution Chart */}
         {adherenceData.total > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Medication Status Distribution</Text>
@@ -685,7 +658,6 @@ const ReportsScreen = ({ navigation }) => {
           </View>
         )}
 
-        {/* Caregiver Insights */}
         <View style={styles.section}>
           <View style={styles.insightCard}>
             <Text style={styles.insightSectionTitle}>Caregiver Insights</Text>
@@ -698,7 +670,6 @@ const ReportsScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Insights */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Insights & Recommendations</Text>
           <View style={styles.insightCard}>

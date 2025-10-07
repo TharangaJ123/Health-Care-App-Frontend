@@ -1,13 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Storage keys
 const STORAGE_KEYS = {
   MEDICATIONS: '@medications',
   MEDICATION_SCHEDULE: '@medication_schedule',
   LAST_ID: '@last_id',
 };
 
-// Helper function to generate unique IDs
 let lastId = 0;
 const generateId = async () => {
   try {
@@ -21,7 +19,6 @@ const generateId = async () => {
   }
 };
 
-// Medication CRUD operations
 const saveMedication = async (medication) => {
   try {
     const medications = await getMedications();
@@ -46,7 +43,6 @@ const saveMedication = async (medication) => {
   }
 };
 
-// Medication CRUD operations
 const getMedications = async () => {
   try {
     const medicationsJson = await AsyncStorage.getItem(STORAGE_KEYS.MEDICATIONS);
@@ -154,7 +150,6 @@ const deleteMedication = async (id) => {
   }
 };
 
-// Schedule management
 const generateScheduleEntries = async (medication) => {
   try {
     const schedule = await getSchedule();
@@ -332,7 +327,6 @@ const removeScheduleEntriesForMedication = async (medicationId) => {
   }
 };
 
-// Statistics and analytics
 const getAdherenceStats = async (startDate, endDate) => {
   try {
     const schedule = await getSchedule();
@@ -405,7 +399,6 @@ const getMonthlyAdherence = async () => {
   }
 };
 
-// Utility functions
 const clearAllData = async () => {
   try {
     await AsyncStorage.removeItem(STORAGE_KEYS.MEDICATIONS);
@@ -465,7 +458,6 @@ const importData = async (data) => {
   }
 };
 
-// Add manual medication entry (for as-needed medications)
 const addManualMedicationEntry = async (medicationId, date, time, status = 'taken') => {
   try {
     const schedule = await getSchedule();
@@ -491,7 +483,6 @@ const addManualMedicationEntry = async (medicationId, date, time, status = 'take
   }
 };
 
-// Export all functions
 export {
   // Medication CRUD
   saveMedication,
@@ -518,7 +509,6 @@ export {
   addManualMedicationEntry
 };
 
-// Default export for backward compatibility
 export default {
   // Medication CRUD
   saveMedication,
