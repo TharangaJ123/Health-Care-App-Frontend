@@ -216,18 +216,12 @@ const EditMedicationScreen = ({ navigation, route }) => {
   };
 
   const handleDelete = async () => {
-    console.log('=== Starting Delete Process ===');
-    console.log('Medication ID to delete:', medicationId, 'Type:', typeof medicationId);
-    console.log('Medication name:', medicationData.name);
-    
     try {
       // Convert medicationId to number for consistency
       const idToDelete = typeof medicationId === 'string' ? parseInt(medicationId, 10) : medicationId;
       
       // First, verify we can find the medication in storage
-      console.log('Fetching all medications to verify...');
       const allMeds = await getMedications();
-      console.log('All medications in storage:', allMeds.map(m => ({ id: m.id, name: m.name, type: typeof m.id })));
       
       const medicationExists = allMeds.some(m => m.id === idToDelete);
       
@@ -250,9 +244,7 @@ const EditMedicationScreen = ({ navigation, route }) => {
             style: 'destructive',
             onPress: async () => {
               try {
-                console.log('User confirmed deletion. Calling deleteMedication...');
                 await deleteMedication(idToDelete);
-                console.log('Medication deleted successfully, navigating back...');
                 Alert.alert('Success', 'Medication deleted successfully', [
                   { text: 'OK', onPress: () => navigation.goBack() }
                 ]);
@@ -268,7 +260,6 @@ const EditMedicationScreen = ({ navigation, route }) => {
                 // Try to get the current state of storage
                 try {
                   const currentStorage = await AsyncStorage.getItem('@medications');
-                  console.log('Current medications in AsyncStorage:', currentStorage);
                 } catch (storageError) {
                   console.error('Failed to read AsyncStorage:', storageError);
                 }
@@ -286,29 +277,23 @@ const EditMedicationScreen = ({ navigation, route }) => {
                     const allMeds = await getMedications();
                     const validMeds = allMeds.filter(m => m && m.id !== undefined);
                     await AsyncStorage.setItem('@medications', JSON.stringify(validMeds));
-                    console.log('Successfully repaired medication data');
                   } catch (repairError) {
                     console.error('Failed to repair data:', repairError);
                   }
                 }
                 
                 Alert.alert('Error', errorMessage, [
-                  { text: 'OK' },
-                  { 
-                    text: 'Force Remove', 
+                  {
+                    text: 'Force Remove',
                     onPress: async () => {
                       try {
-                        console.warn('Attempting force remove of medication...');
                         const allItems = await AsyncStorage.getAllKeys();
-                        console.log('All AsyncStorage keys:', allItems);
                         
                         // Try to find the correct key
-                        const medicationsKey = allItems.find(key => key.toLowerCase().includes('medication'));
-                        console.log('Using medications key:', medicationsKey);
+                        const medicationsKey = allItems.find(key => key.toLowerCase().includes('medications'));
                         
                         if (medicationsKey) {
                           const currentData = await AsyncStorage.getItem(medicationsKey);
-                          console.log('Current data in storage:', currentData);
                           
                           try {
                             const parsed = JSON.parse(currentData || '[]');
