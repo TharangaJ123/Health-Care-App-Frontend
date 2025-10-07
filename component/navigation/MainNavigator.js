@@ -4,17 +4,14 @@ import {
   Text,
   StyleSheet,
 } from 'react-native';
+import { Home } from 'lucide-react-native';
 
 import GoalTrackerIndex from '../goal-tracker/index';
 import AddGoal from '../goal-tracker/AddGoal';
 import GoalDetail from '../goal-tracker/goal-detail';
-
 import BlogIndex from '../blog/index';
 import BlogDetailScreen from '../blog/BlogDetailScreen';
-
 import BottomNav from './BottomNav';
-
-import { Home } from 'lucide-react-native';
 
 const MainNavigator = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -58,7 +55,6 @@ const MainNavigator = () => {
   };
 
   const handleGoalUpdated = (updatedOrId, action) => {
-    // action can be 'delete' or undefined for update
     setGoalsRefreshTick((t) => t + 1);
     if (action === 'delete') {
       setCurrentScreen('goal');
@@ -70,7 +66,6 @@ const MainNavigator = () => {
     if (tab === 'blog') {
       setCurrentScreen('blog');
     } else if (tab === 'add') {
-      // Route the center add button to the Add Goal screen
       setCurrentScreen('addGoal');
     } else {
       setCurrentScreen(tab);
@@ -78,7 +73,7 @@ const MainNavigator = () => {
   };
 
   const renderScreen = () => {
-    console.log('Current screen:', currentScreen); // Debug log
+    console.log('Current screen:', currentScreen);
     
     switch (currentScreen) {
       case 'addGoal':
@@ -91,7 +86,7 @@ const MainNavigator = () => {
       case 'blogDetail':
         return (
           <BlogDetailScreen 
-            post={selectedBlogPost} // This should be defined
+            post={selectedBlogPost}
             onGoBack={handleGoBackFromBlogDetail}
           />
         );
@@ -107,7 +102,6 @@ const MainNavigator = () => {
         break;
     }
 
-    // Handle regular tab screens
     switch (activeTab) {
       case 'home':
         return <Home/>;
