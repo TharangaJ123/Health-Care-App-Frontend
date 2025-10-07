@@ -1,4 +1,3 @@
-// BlogScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -6,224 +5,302 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Image,
   SafeAreaView,
   StatusBar,
   RefreshControl,
   TextInput,
+  Alert,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { apiFetch } from '../../config/api';
+import CreateBlogScreen from './CreateBlogScreen';
 
-const BlogScreen = ({ onNavigateToBlogDetail  }) => {
+const BlogScreen = ({ onNavigateToBlogDetail }) => {
   const [posts, setPosts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [showCreate, setShowCreate] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuPost, setMenuPost] = useState(null);
 
-  // Mock data - replace with your API call
-  const blogPosts = [
-    {
-      id: '1',
-      title: 'The Future of Mobile Development',
-      excerpt: 'Exploring the latest trends and technologies shaping mobile app development in 2024.',
-      content: `Mobile development has undergone significant changes in recent years. With the rise of cross-platform frameworks like React Native and Flutter, developers can now build applications for multiple platforms using a single codebase.
-
-## The Rise of Cross-Platform Development
-
-React Native continues to dominate the cross-platform space, offering near-native performance with the flexibility of JavaScript. The recent improvements in Hermes engine and the new architecture have made React Native apps even faster and more reliable.
-
-### Key Trends for 2024
-
-1. **AI Integration**: Mobile apps are increasingly incorporating AI features
-2. **5G Optimization**: Leveraging faster network speeds for better user experiences
-3. **Privacy-First Design**: Building apps with privacy as a core consideration
-4. **Foldable Device Support**: Adapting to new form factors
-
-The future looks bright for mobile developers who stay updated with these emerging trends and technologies.`,
-      category: 'Technology',
-      date: '2024-01-15',
-      readTime: '5 min read',
-      image: 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=400',
-      author: 'Sarah Chen',
-      authorAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100',
-      authorRole: 'Senior Mobile Developer',
-      likes: 42,
-      comments: 8,
-      tags: ['React Native', 'Mobile', 'Technology', '2024'],
-    },
-    {
-      id: '2',
-      title: 'UX Design Principles for Modern Apps',
-      excerpt: 'Essential design principles that every developer should know for creating intuitive user experiences.',
-      content: `User experience design is crucial for the success of any mobile application. In this comprehensive guide, we'll explore the fundamental principles that make apps intuitive and enjoyable to use.
-
-## Understanding User Needs
-
-The first step in creating a great UX is understanding your users. Conduct user research, create personas, and map user journeys to identify pain points and opportunities.
-
-### Core Design Principles
-
-- **Simplicity**: Keep interfaces clean and focused
-- **Consistency**: Maintain visual and interaction patterns
-- **Feedback**: Provide clear responses to user actions
-- **Accessibility**: Ensure apps are usable by everyone
-
-By following these principles, you can create apps that users love and keep coming back to.`,
-      category: 'Design',
-      date: '2024-01-12',
-      readTime: '7 min read',
-      image: 'https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=400',
-      author: 'Marcus Johnson',
-      authorAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100',
-      authorRole: 'Lead UX Designer',
-      likes: 31,
-      comments: 5,
-      tags: ['UX Design', 'UI', 'User Experience', 'Design Systems'],
-    },
-    {
-      id: '3',
-      title: 'Building Scalable React Native Apps',
-      excerpt: 'Best practices and architecture patterns for building scalable and maintainable React Native applications.',
-      content: `Building scalable React Native applications requires careful planning and architecture decisions. In this article, we'll explore patterns and practices that help your app grow without becoming unmaintainable.
-
-## Architecture Patterns
-
-### Component-Based Architecture
-
-Organize your code into reusable, focused components that follow the single responsibility principle.
-
-### State Management
-
-Choose the right state management solution based on your app's complexity:
-- **Context API** for simple state
-- **Redux** for complex state management
-- **Zustand** for lightweight solutions
-
-### Performance Optimization
-
-Implement lazy loading, memoization, and efficient re-rendering strategies to keep your app performant as it grows.`,
-      category: 'Development',
-      date: '2024-01-10',
-      readTime: '10 min read',
-      image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400',
-      author: 'Alex Rodriguez',
-      authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
-      authorRole: 'React Native Expert',
-      likes: 56,
-      comments: 12,
-      tags: ['React Native', 'Architecture', 'Scalability', 'Performance'],
-    },
+  const categories = [
+    { name: 'All', color: '#666', icon: 'apps' },
+    { name: 'Daily Med Tips', color: '#2196F3', icon: 'bulb' },
+    { name: 'Side Effects Stories', color: '#FF9800', icon: 'warning' },
+    { name: 'Success Journeys', color: '#4CAF50', icon: 'trophy' },
+    { name: 'Ask the Community', color: '#9C27B0', icon: 'chatbubbles' },
+    { name: 'Professional Advice', color: '#F44336', icon: 'medical' },
   ];
-
-  const categories = ['All', 'Technology', 'Design', 'Development', 'AI', 'Business'];
 
   useEffect(() => {
     loadPosts();
   }, []);
 
-  const loadPosts = () => {
-    // Simulate API call
+  const loadPosts = async () => {
     setRefreshing(true);
-    setTimeout(() => {
+    try {
+      const data = await apiFetch('/api/blogs');
+      if (Array.isArray(data)) {
+        const normalized = data.map((p) => ({
+          ...p,
+          id: String(p.id || p._id || ''),
+          tags: Array.isArray(p.tags)
+            ? p.tags
+            : String(p.tags || '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean),
+        }));
+        setPosts(normalized);
+      } else {
+        setPosts(blogPosts);
+      }
+    } catch (e) {
       setPosts(blogPosts);
+    } finally {
       setRefreshing(false);
-    }, 1000);
+    }
   };
 
-  // const handlePostPress = (post) => {
-  //   navigation.navigate('blogDetail', { post });
-  // };
+  // When user taps Share button, show create screen; on creation, add to list
+  if (showCreate) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <CreateBlogScreen
+          initial={editingPost}
+          onCreated={(created) => {
+            const normalized = {
+              ...created,
+              id: String(created.id || created._id || ''),
+              tags: Array.isArray(created.tags)
+                ? created.tags
+                : String(created.tags || '')
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+            };
+            setPosts((prev) => [normalized, ...prev]);
+            setShowCreate(false);
+            setEditingPost(null);
+          }}
+          onUpdated={(updated) => {
+            const normalized = {
+              ...updated,
+              id: String(updated.id || updated._id || editingPost?.id || editingPost?._id || ''),
+              tags: Array.isArray(updated.tags)
+                ? updated.tags
+                : String(updated.tags || '')
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+            };
+            const matchId = String(updated.id || updated._id || editingPost?.id || editingPost?._id || '');
+            setPosts((prev) => prev.map(p => (String(p.id || p._id) === matchId ? { ...p, ...normalized } : p)));
+            setShowCreate(false);
+            setEditingPost(null);
+          }}
+          onCancel={() => setShowCreate(false)}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  const handleHelpful = (postId) => {
+    setPosts(currentPosts =>
+      currentPosts.map(post =>
+        String(post.id || post._id) === String(postId)
+          ? { ...post, helpfulCount: post.helpfulCount + 1, likes: post.likes + 1 }
+          : post
+      )
+    );
+  };
+
+  const getCategoryColor = (categoryName) => {
+    const category = categories.find(cat => cat.name === categoryName);
+    return category ? category.color : '#666';
+  };
 
   const handlePostPress = (post) => {
-    console.log('Post pressed:', post.title); // Debug log
-    if (onNavigateToBlogDetail && typeof onNavigateToBlogDetail === 'function') {
+    if (onNavigateToBlogDetail) {
       onNavigateToBlogDetail(post);
-    } else {
-      console.error('onNavigateToBlogDetail is not a function or is undefined');
-      console.log('onNavigateToBlogDetail value:', onNavigateToBlogDetail);
     }
   };
 
   const filteredPosts = posts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
+                         post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         post.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = selectedCategory === 'All' || post.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
-  const renderPostItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.postCard}
-      onPress={() => handlePostPress(item)}
-    >
-      <Image source={{ uri: item.image }} style={styles.postImage} />
-      <View style={styles.postContent}>
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryText}>{item.category}</Text>
-        </View>
-        <Text style={styles.postTitle}>{item.title}</Text>
-        <Text style={styles.postExcerpt}>{item.excerpt}</Text>
-        
-        <View style={styles.postMeta}>
-          <View style={styles.authorInfo}>
-            <Image source={{ uri: item.authorAvatar }} style={styles.avatar} />
-            <Text style={styles.authorName}>{item.author}</Text>
+  const renderPostItem = ({ item }) => {
+    const categoryColor = getCategoryColor(item.category);
+
+    return (
+      <TouchableOpacity style={styles.postCard} onPress={() => handlePostPress(item)}>
+        {/* Category Header */}
+        <View style={[styles.categoryHeader, { backgroundColor: categoryColor + '15' }]}>
+          <View style={styles.categoryLeft}>
+            <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} />
+            <Text style={[styles.categoryText, { color: categoryColor }]}>
+              {item.category}
+            </Text>
           </View>
-          <Text style={styles.postDate}>{formatDate(item.date)}</Text>
-        </View>
-        
-        <View style={styles.postStats}>
-          <View style={styles.statItem}>
-            <Ionicons name="time-outline" size={14} color="#666" />
-            <Text style={styles.statText}>{item.readTime}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Ionicons name="heart-outline" size={14} color="#666" />
-            <Text style={styles.statText}>{item.likes}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Ionicons name="chatbubble-outline" size={14} color="#666" />
-            <Text style={styles.statText}>{item.comments}</Text>
+          <View style={styles.headerRightRow}>
+            {item.isVerified && (
+              <View style={styles.verifiedBadge}>
+                <Ionicons name="checkmark-circle" size={14} color="#4A90E2" />
+                <Text style={styles.verifiedText}>Verified</Text>
+              </View>
+            )}
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() => { setMenuPost(item); setMenuVisible(true); }}
+            >
+              <Ionicons name="ellipsis-vertical" size={18} color="#666" />
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+
+        {/* Post Content */}
+        <View style={styles.postContent}>
+          <Text style={styles.postTitle}>{item.title}</Text>
+          <Text style={styles.postExcerpt}>{item.excerpt}</Text>
+
+          {/* Tags */}
+          <View style={styles.tagsContainer}>
+            {item.tags.slice(0, 3).map((tag, index) => (
+              <View key={index} style={styles.tag}>
+                <Text style={styles.tagText}>#{tag}</Text>
+              </View>
+            ))}
+            {item.tags.length > 3 && (
+              <Text style={styles.moreTags}>+{item.tags.length - 3} more</Text>
+            )}
+          </View>
+
+          {/* Author & Stats */}
+          <View style={styles.postFooter}>
+            <View style={styles.authorSection}>
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>
+                  {item.isAnonymous ? 'A' : item.author.charAt(0)}
+                </Text>
+              </View>
+              <View>
+                <Text style={styles.authorName}>
+                  {item.isAnonymous ? 'Anonymous' : item.author}
+                </Text>
+                <Text style={styles.authorRole}>{item.authorRole}</Text>
+              </View>
+            </View>
+
+            <View style={styles.actionsRight}>
+              <Text style={styles.postDate}>{formatDate(item.date)}</Text>
+              <View style={styles.stats}>
+                <TouchableOpacity
+                  style={styles.statItem}
+                  onPress={() => handleHelpful(item.id || item._id)}
+                >
+                  <Ionicons name="heart" size={16} color="#FF6B6B" />
+                  <Text style={styles.statText}>{item.helpfulCount}</Text>
+                </TouchableOpacity>
+                <View style={styles.statItem}>
+                  <Ionicons name="time" size={14} color="#666" />
+                  <Text style={styles.statText}>{item.readTime}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const handleEdit = (post) => {
+    setEditingPost(post);
+    setShowCreate(true);
+  };
+
+  const handleDelete = (post) => {
+    setPendingDelete(post);
+    setConfirmText('');
+    setConfirmVisible(true);
+  };
+
+  const performDelete = async () => {
+    if (!pendingDelete) return;
+    const targetId = String(pendingDelete.id || pendingDelete._id);
+    const url = `/api/blogs/${encodeURIComponent(targetId)}`;
+    console.log('DELETE request:', url);
+    try {
+      await apiFetch(url, { method: 'DELETE' });
+      setPosts((prev) => prev.filter((p) => String(p.id || p._id) !== targetId));
+      setConfirmVisible(false);
+      setPendingDelete(null);
+      setConfirmText('');
+    } catch (error) {
+      console.error('Error deleting blog:', error);
+      Alert.alert('Error', error.message || 'Failed to delete blog');
+    }
+  };
+
+  const cancelDelete = () => {
+    setConfirmVisible(false);
+    setPendingDelete(null);
+    setConfirmText('');
+  };
+
+
 
   const renderCategoryItem = ({ item }) => (
     <TouchableOpacity
       style={[
         styles.categoryChip,
-        selectedCategory === item && styles.categoryChipActive
+        selectedCategory === item.name && [styles.categoryChipActive, { backgroundColor: item.color }]
       ]}
-      onPress={() => setSelectedCategory(item)}
+      onPress={() => setSelectedCategory(item.name)}
     >
+      <Ionicons
+        name={item.icon}
+        size={16}
+        color={selectedCategory === item.name ? '#fff' : item.color}
+      />
       <Text style={[
         styles.categoryChipText,
-        selectedCategory === item && styles.categoryChipTextActive
+        selectedCategory === item.name && styles.categoryChipTextActive
       ]}>
-        {item}
+        {item.name}
       </Text>
     </TouchableOpacity>
   );
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Blog</Text>
-        <TouchableOpacity style={styles.headerButton}>
-          <Ionicons name="notifications-outline" size={24} color="#333" />
+        <View>
+          <Text style={styles.headerTitle}>MedTalks</Text>
+          <Text style={styles.headerSubtitle}>Share • Learn • Heal Together</Text>
+        </View>
+        <TouchableOpacity style={styles.headerButton} activeOpacity={0.8} onPress={() => { setEditingPost(null); setShowCreate(true); }}>
+          <Ionicons name="add-circle-outline" size={32} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -232,11 +309,16 @@ Implement lazy loading, memoization, and efficient re-rendering strategies to ke
         <Ionicons name="search" size={20} color="#666" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search articles..."
+          placeholder="Search symptoms, medications, or experiences..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholderTextColor="#999"
         />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={20} color="#999" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Categories */}
@@ -244,7 +326,7 @@ Implement lazy loading, memoization, and efficient re-rendering strategies to ke
         <FlatList
           data={categories}
           renderItem={renderCategoryItem}
-          keyExtractor={(item) => item}
+          keyExtractor={(item) => item.name}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesList}
@@ -255,26 +337,91 @@ Implement lazy loading, memoization, and efficient re-rendering strategies to ke
       <FlatList
         data={filteredPosts}
         renderItem={renderPostItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id || item._id)}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={loadPosts}
-            colors={['#007AFF']}
+            colors={['#4CAF50']}
           />
         }
         contentContainerStyle={styles.postsList}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyStateText}>No articles found</Text>
+            <Ionicons name="medical-outline" size={80} color="#E0E0E0" />
+            <Text style={styles.emptyStateText}>No stories found</Text>
             <Text style={styles.emptyStateSubtext}>
-              Try adjusting your search or filter criteria
+              {searchQuery ? 'Try different search terms' : 'Be the first to share your experience'}
             </Text>
+            <TouchableOpacity style={styles.emptyStateButton} onPress={() => setShowCreate(true)}>
+              <Text style={styles.emptyStateButtonText}>Share Your Story</Text>
+            </TouchableOpacity>
           </View>
         }
       />
+
+      {/* Confirm Delete Modal */}
+      <Modal visible={confirmVisible} transparent animationType="fade" onRequestClose={cancelDelete}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Confirm Delete</Text>
+            <Text style={styles.modalDesc}>
+              Are you sure you want to delete this blog? Type DELETE_BLOG to confirm.
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Type DELETE_BLOG"
+              value={confirmText}
+              onChangeText={setConfirmText}
+              autoCapitalize="characters"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={[styles.actionButton, styles.modalCancel]} onPress={cancelDelete}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.modalDanger, confirmText !== 'DELETE_BLOG' && { opacity: 0.5 }]}
+                onPress={performDelete}
+                disabled={confirmText !== 'DELETE_BLOG'}
+              >
+                <Text style={styles.modalDangerText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Post Options Menu */}
+      <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
+        <View style={styles.menuOverlay}>
+          <View style={styles.menuBox}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                if (menuPost) handleEdit(menuPost);
+                setMenuVisible(false);
+              }}
+            >
+              <Ionicons name="create-outline" size={18} color="#333" />
+              <Text style={styles.menuItemText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.menuItem, styles.menuDangerItem]}
+              onPress={() => {
+                if (menuPost) handleDelete(menuPost);
+                setMenuVisible(false);
+              }}
+            >
+              <Ionicons name="trash-outline" size={18} color="#F44336" />
+              <Text style={[styles.menuItemText, styles.menuDangerText]}>Delete</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuCancel} onPress={() => setMenuVisible(false)}>
+              <Text style={styles.menuCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -282,7 +429,7 @@ Implement lazy loading, memoization, and efficient re-rendering strategies to ke
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
   },
   header: {
     flexDirection: 'row',
@@ -290,53 +437,139 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    marginTop:25
   },
   headerButton: {
-    padding: 8,
+    backgroundColor: '#007AFF',
+    borderRadius: 50,
+    padding: 12,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#4A90E2',
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  createButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4A90E2',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    shadowColor: '#4A90E2',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  createButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 6,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#fff',
     margin: 20,
     marginBottom: 16,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 14,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 12,
     fontSize: 16,
     color: '#333',
+    fontWeight: '500',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    paddingVertical: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#2E8B57',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 6,
+    fontWeight: '500',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: '#f0f0f0',
   },
   categoriesContainer: {
-    marginBottom: 20,
+    marginBottom: 8,
   },
   categoriesList: {
     paddingHorizontal: 20,
   },
   categoryChip: {
-    backgroundColor: '#f8f8f8',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 20,
     marginRight: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   categoryChipActive: {
-    backgroundColor: '#007AFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   categoryChipText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#666',
+    marginLeft: 6,
   },
   categoryChipTextActive: {
     color: '#fff',
@@ -347,107 +580,291 @@ const styles = StyleSheet.create({
   },
   postCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 20,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
+    shadowRadius: 12,
     elevation: 5,
+    overflow: 'hidden',
   },
-  postImage: {
-    width: '100%',
-    height: 160,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  postContent: {
-    padding: 16,
-  },
-  categoryBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#f0f7ff',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 8,
-  },
-  categoryText: {
-    color: '#007AFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  postTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 8,
-    lineHeight: 24,
-  },
-  postExcerpt: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  postMeta: {
+  categoryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
-  authorInfo: {
+  headerRightRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  avatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  menuButton: {
+    padding: 6,
+    marginLeft: 6,
+    borderRadius: 8,
+  },
+  categoryLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  categoryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     marginRight: 8,
   },
-  authorName: {
-    fontSize: 14,
+  categoryText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  verifiedText: {
+    color: '#4A90E2',
+    fontSize: 10,
+    fontWeight: '700',
+    marginLeft: 2,
+  },
+  postContent: {
+    padding: 20,
+  },
+  postTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    marginBottom: 12,
+    lineHeight: 28,
+    letterSpacing: -0.3,
+  },
+  postExcerpt: {
+    fontSize: 15,
+    color: '#666',
+    lineHeight: 22,
+    marginBottom: 16,
     fontWeight: '500',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  tag: {
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
+  },
+  moreTags: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '500',
+  },
+  postFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  authorSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#4A90E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  authorName: {
+    fontSize: 15,
+    fontWeight: '700',
     color: '#333',
+  },
+  authorRole: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  statsSection: {
+    alignItems: 'flex-end',
+  },
+  actionsRight: {
+    alignItems: 'flex-end',
   },
   postDate: {
     fontSize: 12,
     color: '#999',
+    fontWeight: '600',
+    marginBottom: 6,
   },
-  postStats: {
+  stats: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   statItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
+    marginLeft: 12,
   },
   statText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
     marginLeft: 4,
+    fontWeight: '600',
+  },
+  // Menu styles
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    justifyContent: 'flex-end',
+  },
+  menuBox: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingVertical: 8,
+    paddingBottom: 20,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  menuItemText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '600',
+  },
+  menuDangerItem: {
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  menuDangerText: {
+    color: '#F44336',
+  },
+  menuCancel: {
+    marginTop: 6,
+    backgroundColor: '#f7f7f7',
+    alignSelf: 'center',
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  menuCancelText: {
+    color: '#333',
+    fontWeight: '700',
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: 80,
   },
   emptyStateText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#666',
-    marginTop: 16,
+    marginTop: 20,
     marginBottom: 8,
   },
   emptyStateSubtext: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#999',
     textAlign: 'center',
+    marginBottom: 24,
+    fontWeight: '500',
+  },
+  emptyStateButton: {
+    backgroundColor: '#4A90E2',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  emptyStateButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalBox: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  modalDesc: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 12,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 16,
+    color: '#222',
+    backgroundColor: '#fafafa',
+    marginBottom: 14,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  modalCancel: {
+    backgroundColor: '#eee',
+  },
+  modalCancelText: {
+    color: '#333',
+    fontWeight: '700',
+  },
+  modalDanger: {
+    backgroundColor: '#F44336',
+    marginLeft: 8,
+  },
+  modalDangerText: {
+    color: '#fff',
+    fontWeight: '700',
   },
 });
 

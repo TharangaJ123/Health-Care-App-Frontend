@@ -22,8 +22,8 @@ const BottomNav = ({ activeTab, onTabPress }) => {
     },
     {
       id: 'goal',
-      label: 'goal', 
-      iconName: 'search-outline',
+      label: 'Goals',
+      iconName: 'flag-outline',
       iconSet: 'Ionicons',
     },
     {
@@ -36,35 +36,28 @@ const BottomNav = ({ activeTab, onTabPress }) => {
     {
       id: 'blog',
       label: 'Blog',
-      iconName: 'pets',
-      iconSet: 'MaterialIcons',
+      iconName: 'newspaper-outline',
+      iconSet: 'Ionicons',
     },
     {
       id: 'profile',
-      label: 'More',
-      iconName: 'ellipsis-horizontal',
+      label: 'Profile',
+      iconName: 'person-outline',
       iconSet: 'Ionicons',
     },
   ];
 
   const renderIcon = (tab) => {
     const IconComponent = tab.iconSet === 'Ionicons' ? Ionicons : MaterialIcons;
-    
-    if (tab.isCenter) {
-      return (
-        <IconComponent 
-          name={tab.iconName} 
-          size={28} 
-          color="#FFFFFF" 
-        />
-      );
-    }
-    
+    const isActive = activeTab === tab.id;
+    const color = isActive ? '#FFD166' : '#FFFFFF';
+    const size = tab.isCenter ? 28 : 24;
+
     return (
-      <IconComponent 
-        name={tab.iconName} 
-        size={24} 
-        color="#FFFFFF" 
+      <IconComponent
+        name={tab.iconName}
+        size={size}
+        color={color}
       />
     );
   };
@@ -96,7 +89,10 @@ const BottomNav = ({ activeTab, onTabPress }) => {
               <View style={styles.regularTab}>
                 {renderIcon(tab)}
                 {tab.label !== '' && (
-                  <Text style={styles.tabLabel}>
+                  <Text style={[
+                    styles.tabLabel,
+                    activeTab === tab.id && { color: '#FFD166', fontWeight: '700' }
+                  ]}>
                     {tab.label}
                   </Text>
                 )}
@@ -111,11 +107,10 @@ const BottomNav = ({ activeTab, onTabPress }) => {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'fixed',
+    position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    marginTop:10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.15,
@@ -127,6 +122,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 10,
     paddingHorizontal: 20,
+    marginTop:10,
     alignItems: 'center',
     height: 80,
   },

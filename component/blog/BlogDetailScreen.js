@@ -1,4 +1,3 @@
-// blog/BlogDetailScreen.js
 import React, { useState } from 'react';
 import {
   View,
@@ -11,15 +10,34 @@ import {
   StatusBar,
   Share,
   Alert,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { apiFetch } from '../../config/api';
 
-const BlogDetailScreen = ({ post, onGoBack }) => { // Receive post directly as prop
+const CATEGORY_COVERS = {
+  'Daily Med Tips': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1200',
+  'Side Effects Stories': 'https://images.unsplash.com/photo-1582719478250-046d5e8b9d7a?w=1200',
+  'Success Journeys': 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1200',
+  'Ask the Community': 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=1200',
+  'Professional Advice': 'https://images.unsplash.com/photo-1580281657521-6c0d03317f6f?w=1200',
+  'All': 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=1200',
+};
+
+function getCategoryCover(category) {
+  if (!category) return CATEGORY_COVERS['All'];
+  return CATEGORY_COVERS[category] || CATEGORY_COVERS['All'];
+}
+
+const BlogDetailScreen = ({ post, onGoBack }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [likesCount, setLikesCount] = useState(post?.likes || 0); // Safe access with optional chaining
+  const [likesCount, setLikesCount] = useState(post?.likes || 0);
+  const [summaryVisible, setSummaryVisible] = useState(false);
+  const [summaryText, setSummaryText] = useState('');
+  const [summarizing, setSummarizing] = useState(false);
 
-  // Safe guard - if post is undefined, show error
   if (!post) {
     return (
       <SafeAreaView style={styles.container}>
@@ -61,6 +79,27 @@ const BlogDetailScreen = ({ post, onGoBack }) => { // Receive post directly as p
   const handleBackPress = () => {
     if (onGoBack) {
       onGoBack();
+    }
+  };
+
+  const handleSummarize = async () => {
+    if (!post?.content) {
+      Alert.alert('No content', 'This post has no content to summarize.');
+      return;
+    }
+    try {
+      setSummarizing(true);
+      setSummaryVisible(true);
+      setSummaryText('');
+      const resp = await apiFetch('/api/blogs/summarize', {
+        method: 'POST',
+        body: { title: post.title || '', content: post.content || '' },
+      });
+      setSummaryText(resp?.summary || 'No summary returned.');
+    } catch (e) {
+      setSummaryText(`Failed to summarize: ${e.message || ''}`.trim());
+    } finally {
+      setSummarizing(false);
     }
   };
 
@@ -152,10 +191,12 @@ const BlogDetailScreen = ({ post, onGoBack }) => { // Receive post directly as p
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        {/* Featured Image */}
-        <Image source={{ uri: post.image }} style={styles.featuredImage} />
-
         <View style={styles.content}>
+          <Image
+            source={{ uri: getCategoryCover(post.category) }}
+            style={styles.featuredImage}
+            resizeMode="cover"
+          />
           {/* Category and Date */}
           <View style={styles.metaInfo}>
             <View style={styles.categoryBadge}>
@@ -172,7 +213,12 @@ const BlogDetailScreen = ({ post, onGoBack }) => { // Receive post directly as p
 
           {/* Author Info */}
           <View style={styles.authorContainer}>
-            <Image source={{ uri: post.authorAvatar }} style={styles.authorAvatar} />
+            {/* <Image source={{ uri: post.authorAvatar }} style={styles.authorAvatar} /> */}
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>
+                  {post.isAnonymous ? 'A' : post.author.charAt(0)}
+              </Text>
+            </View>
             <View style={styles.authorInfo}>
               <Text style={styles.authorName}>{post.author}</Text>
               <Text style={styles.authorRole}>{post.authorRole}</Text>
@@ -195,6 +241,7 @@ const BlogDetailScreen = ({ post, onGoBack }) => { // Receive post directly as p
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
+
             <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
               <Ionicons 
                 name={isLiked ? "heart" : "heart-outline"} 
@@ -206,34 +253,41 @@ const BlogDetailScreen = ({ post, onGoBack }) => { // Receive post directly as p
               </Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.actionButton} onPress={() => Alert.alert('Comments', 'Comments feature would open here')}>
-              <Ionicons name="chatbubble-outline" size={24} color="#666" />
-              <Text style={styles.actionText}>{post.comments}</Text>
-            </TouchableOpacity>
-            
             <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
               <Ionicons name="share-outline" size={24} color="#666" />
               <Text style={styles.actionText}>Share</Text>
             </TouchableOpacity>
-          </View>
 
-          {/* Related Articles Section */}
-          <View style={styles.relatedSection}>
-            <Text style={styles.relatedTitle}>Related Articles</Text>
-            <Text style={styles.relatedSubtitle}>You might also be interested in</Text>
-            
-            <TouchableOpacity style={styles.relatedCard}>
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=300' }} 
-                style={styles.relatedImage} 
-              />
-              <View style={styles.relatedContent}>
-                <Text style={styles.relatedCardTitle}>Advanced React Native Patterns</Text>
-                <Text style={styles.relatedCardExcerpt}>Learn advanced patterns for building complex applications</Text>
-              </View>
+            <TouchableOpacity style={styles.actionButton} onPress={handleSummarize}>
+              <Ionicons name="bulb-outline" size={24} color="#666" />
+              <Text style={styles.actionText}>AI Summary</Text>
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* AI Summary Modal */}
+        <Modal visible={summaryVisible} transparent animationType="fade" onRequestClose={() => setSummaryVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>AI Summary</Text>
+              {summarizing ? (
+                <View style={styles.modalLoading}>
+                  <ActivityIndicator size="large" color="#007AFF" />
+                  <Text style={styles.modalHint}>Summarizing...</Text>
+                </View>
+              ) : (
+                <ScrollView style={styles.modalContent}>
+                  <Text style={styles.modalText}>{summaryText}</Text>
+                </ScrollView>
+              )}
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={[styles.modalBtn, styles.modalClose]} onPress={() => setSummaryVisible(false)}>
+                  <Text style={styles.modalCloseText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );
@@ -277,6 +331,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    marginTop:25
   },
   backButton: {
     flexDirection: 'row',
@@ -349,11 +404,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  authorAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    marginRight: 16,
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#4A90E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
   authorInfo: {
     flex: 1,
@@ -383,7 +446,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    color: '#666',
+    color: '#1552bcff',
     fontWeight: '500',
   },
   contentContainer: {
@@ -493,6 +556,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 18,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalBox: {
+    width: '100%',
+    maxHeight: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  modalContent: {
+    maxHeight: 320,
+  },
+  modalText: {
+    fontSize: 15,
+    color: '#333',
+    lineHeight: 22,
+  },
+  modalButtons: {
+    alignItems: 'flex-end',
+    marginTop: 12,
+  },
+  modalBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  modalClose: {
+    backgroundColor: '#007AFF',
+  },
+  modalCloseText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  modalLoading: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  modalHint: {
+    color: '#666',
+    marginTop: 10,
   },
 });
 

@@ -8,99 +8,83 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
+import { apiFetch } from '../../config/api';
 
-const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail }) => {
+const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refreshSignal }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [goals, setGoals] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
-
-  // Sample goals data
-  const sampleGoals = [
-    {
-      id: '1',
-      title: 'Morning Meditation',
-      description: '15 minutes of mindfulness meditation',
-      type: 'mental',
-      date: new Date().toISOString().split('T')[0], // Today's date
-      completed: true,
-      time: '07:00 AM',
-      priority: 'high'
-    },
-    {
-      id: '2',
-      title: 'Gym Workout',
-      description: 'Strength training session - Chest and Triceps',
-      type: 'physical',
-      date: new Date().toISOString().split('T')[0], // Today's date
-      completed: false,
-      time: '06:00 PM',
-      priority: 'medium'
-    },
-    {
-      id: '3',
-      title: 'Read Book',
-      description: 'Read 30 pages of "Atomic Habits"',
-      type: 'mental',
-      date: '2024-01-21',
-      completed: false,
-      time: '09:00 PM',
-      priority: 'low'
-    },
-    {
-      id: '4',
-      title: 'Meal Prep',
-      description: 'Prepare healthy meals for the week',
-      type: 'nutrition',
-      date: '2024-01-22',
-      completed: false,
-      time: '10:00 AM',
-      priority: 'high'
-    },
-    {
-      id: '5',
-      title: 'Yoga Session',
-      description: '30 minutes of yoga for flexibility',
-      type: 'physical',
-      date: '2024-01-22',
-      completed: false,
-      time: '08:00 AM',
-      priority: 'medium'
-    },
-    {
-      id: '6',
-      title: 'Journal Writing',
-      description: 'Write daily reflections and gratitude',
-      type: 'mental',
-      date: '2024-01-23',
-      completed: false,
-      time: '08:30 PM',
-      priority: 'low'
-    },
-    {
-      id: '7',
-      title: 'Cardio Exercise',
-      description: '30 minutes of running or cycling',
-      type: 'physical',
-      date: '2024-01-24',
-      completed: false,
-      time: '07:00 AM',
-      priority: 'high'
-    },
-  ];
+  const [actionsVisible, setActionsVisible] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState(null);
 
   useEffect(() => {
-    // Initialize with sample data
+    loadGoals();
+  }, []);
+
+  useEffect(() => {
+    if (typeof refreshSignal !== 'undefined') {
+      loadGoals();
+    }
+  }, [refreshSignal]);
+
+  const normalizeGoal = (g, idx) => ({
+    id: g.id?.toString?.() || `${idx}`,
+    title: g.title || g.name || 'Untitled Goal',
+    description: g.description || '',
+    type: g.type || 'other',
+    date: g.date || g.startDate || new Date().toISOString().split('T')[0],
+    completed: Boolean(g.completed || false),
+    time: g.time || '—',
+    priority: g.priority || 'medium',
+    reminders: Array.isArray(g.reminders) ? g.reminders : [],
+    notificationIds: Array.isArray(g.notificationIds) ? g.notificationIds : [],
+  });
+
+  const loadGoals = async () => {
+    try {
+      const data = await apiFetch('/api/goals');
+      if (Array.isArray(data) && data.length) {
+        const mapped = data.map((g, i) => normalizeGoal(g, i));
+        setGoals(mapped);
+        updateMarkedDates(mapped);
+        return;
+      }
+    } catch (e) {
+      // ignore and fallback
+    }
     setGoals(sampleGoals);
     updateMarkedDates(sampleGoals);
-  }, []);
+  };
+
+  const openActions = (goal) => {
+    setSelectedGoal(goal);
+    setActionsVisible(true);
+  };
+  const closeActions = () => {
+    setActionsVisible(false);
+    setSelectedGoal(null);
+  };
+  const confirmDeleteGoal = async () => {
+    if (!selectedGoal) return;
+    const goalId = selectedGoal.id;
+    try {
+      await apiFetch(`/api/goals/${encodeURIComponent(goalId)}`, { method: 'DELETE' });
+    } catch {}
+    setGoals((prev) => {
+      const next = prev.filter(g => g.id !== goalId);
+      updateMarkedDates(next);
+      return next;
+    });
+    closeActions();
+  };
 
   const updateMarkedDates = (goalsList) => {
     const marks = {};
     
-    // Mark dates that have goals
     goalsList.forEach(goal => {
       if (!marks[goal.date]) {
         marks[goal.date] = {
@@ -110,7 +94,6 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail }) =>
       }
     });
     
-    // Always mark selected date
     marks[selectedDate] = {
       ...marks[selectedDate],
       selected: true,
@@ -228,7 +211,6 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail }) =>
             </View>
           </View>
           
-          <Text style={styles.goalDescription}>{item.description}</Text>
           
           <View style={styles.goalMeta}>
             <View style={styles.timeBadge}>
@@ -238,12 +220,23 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail }) =>
             <Text style={styles.typeText}>{item.type}</Text>
           </View>
         </View>
-        
-        <Ionicons 
-          name={item.completed ? "checkmark-circle" : "ellipse-outline"} 
-          size={28} 
-          color={item.completed ? "#4CD964" : "#C7C7CC"} 
-        />
+        <View style={styles.actionIcons}>
+          <Ionicons 
+            name={item.completed ? 'checkmark-circle' : 'ellipse-outline'} 
+            size={28} 
+            color={item.completed ? '#4CD964' : '#C7C7CC'} 
+          />
+          <TouchableOpacity
+            style={styles.moreButton}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              openActions(item);
+            }}
+          >
+            <Ionicons name="ellipsis-vertical" size={18} color="#666" />
+          </TouchableOpacity>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -254,12 +247,34 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail }) =>
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      {/* Actions Modal */}
+      <Modal visible={actionsVisible} transparent animationType="slide" onRequestClose={closeActions}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHandle} />
+            <View style={{ marginBottom: 12 }}>
+              <Text style={styles.modalTitle}>{selectedGoal?.title || 'Goal options'}</Text>
+              <Text style={styles.modalSubtitle}>Choose an action</Text>
+            </View>
+            <TouchableOpacity style={[styles.modalButton, styles.modalDelete]} onPress={confirmDeleteGoal}>
+              <Ionicons name="trash-outline" size={18} color="#fff" />
+              <Text style={styles.modalDeleteText}>Delete Goal</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalButton, styles.modalCancel]} onPress={closeActions}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Goals Calendar</Text>
-        <TouchableOpacity style={styles.headerButton} onPress={() => onNavigateToAddGoal()}>
-          <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
+        <View>
+          <Text style={styles.headerTitle}>AI TrackIt</Text>
+          <Text style={styles.headerSubtitle}>Dream • Plan • Conquer</Text>
+        </View>
+        <TouchableOpacity style={styles.headerButton} activeOpacity={0.8} onPress={() => onNavigateToAddGoal()}>
+          <Ionicons name="add-circle-outline" size={32} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -378,14 +393,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    marginTop:25
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#4A90E2',
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
   },
   headerButton: {
-    padding: 4,
+    backgroundColor: '#007AFF',
+    borderRadius: 50,
+    padding: 12,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
@@ -489,6 +520,76 @@ const styles = StyleSheet.create({
   goalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  actionIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  moreButton: {
+    padding: 6,
+    marginLeft: 6,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 16,
+    paddingBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 10,
+  },
+  modalHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E5E7EB',
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  modalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 8,
+  },
+  modalDelete: {
+    backgroundColor: '#175caaff',
+  },
+  modalDeleteText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  modalCancel: {
+    backgroundColor: '#f0f0f0',
+  },
+  modalCancelText: {
+    color: '#333',
+    fontSize: 15,
+    fontWeight: '600',
   },
   typeIndicator: {
     width: 40,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect,useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,9 @@ import {
   Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { apiFetch } from '../../config/api';
 
 const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) => {
-  // If using navigation params (comment out if using direct props)
-  // const { goal } = route.params;
   
   const [currentGoal, setCurrentGoal] = useState(goal || {
     id: '1',
@@ -27,8 +26,28 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
     completed: false,
     createdAt: '2024-01-15',
     reminders: ['10 minutes before'],
-    notes: 'Use the calm app for guided meditation'
+    notes: 'Use the calm app for guided meditation',
+    steps: [],
   });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        if (goal?.id) {
+          const fresh = await apiFetch(`/api/goals/${encodeURIComponent(goal.id)}`);
+          if (fresh && typeof fresh === 'object') {
+            setCurrentGoal((prev) => ({ ...prev, ...fresh }));
+          }
+        }
+      } catch {}
+    };
+    load();
+  }, [goal?.id]);
+
+  const stepsTotal = Array.isArray(currentGoal.steps) ? currentGoal.steps.length : 0;
+  const stepsDone = Array.isArray(currentGoal.steps) ? currentGoal.steps.filter(s => s.completed).length : 0;
+  const progressPct = stepsTotal > 0 ? Math.round((stepsDone / stepsTotal) * 100) : 0;
+  const [recommendations, setRecommendations] = useState('');
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -36,6 +55,55 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
       case 'medium': return '#FF9500';
       case 'low': return '#4CD964';
       default: return '#007AFF';
+    }
+  };
+
+  const handleGenerateSteps = useCallback(async () => {
+    try {
+      const res = await apiFetch(`/api/goals/${encodeURIComponent(currentGoal.id)}/generate-steps`, { method: 'POST' });
+      const steps = Array.isArray(res?.steps) ? res.steps : [];
+      if (JSON.stringify(steps) !== JSON.stringify(currentGoal.steps)) {
+        const updated = { ...currentGoal, steps };
+        setCurrentGoal(updated);
+        onGoalUpdate?.(updated);
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Failed to generate steps.');
+    }
+  }, [currentGoal, setCurrentGoal, onGoalUpdate]);
+
+
+  const toggleStep = async (stepId) => {
+    try {
+      if (!currentGoal.id) return;
+      const res = await apiFetch(`/api/goals/${encodeURIComponent(currentGoal.id)}/steps/${encodeURIComponent(stepId)}/toggle`, { method: 'PATCH' });
+      const updated = {
+        ...currentGoal,
+        steps: Array.isArray(res?.steps) ? res.steps : currentGoal.steps,
+        completed: typeof res?.completed === 'boolean' ? res.completed : currentGoal.completed,
+        completedAt: res?.completedAt || currentGoal.completedAt,
+      };
+
+      if (updated.completed && Array.isArray(updated.notificationIds) && updated.notificationIds.length) {
+        try { await cancelScheduledNotifications(updated.notificationIds); } catch {}
+        updated.notificationIds = [];
+      }
+      setCurrentGoal(updated);
+      onGoalUpdate && onGoalUpdate(updated);
+
+      if (updated.completed) {
+        try {
+          const rec = await apiFetch(`/api/goals/${encodeURIComponent(updated.id)}/recommendations`);
+          setRecommendations(typeof rec?.recommendations === 'string' ? rec.recommendations : '');
+        } catch {}
+      }
+    } catch (e) {
+      const msg = e?.message || '';
+      if (msg.includes('PREREQUISITE_INCOMPLETE') || msg.includes('previous steps')) {
+        Alert.alert('Finish previous steps', 'Please complete the earlier step(s) before this one.');
+      } else {
+        Alert.alert('Error', 'Failed to update step.');
+      }
     }
   };
 
@@ -88,31 +156,6 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
     }
   };
 
-  const toggleCompletion = () => {
-    const updatedGoal = {
-      ...currentGoal,
-      completed: !currentGoal.completed,
-      completedAt: !currentGoal.completed ? new Date().toISOString() : null
-    };
-    
-    setCurrentGoal(updatedGoal);
-    
-    if (onGoalUpdate) {
-      onGoalUpdate(updatedGoal);
-    }
-    
-    Alert.alert(
-      currentGoal.completed ? 'Goal Reactivated' : 'Goal Completed!',
-      currentGoal.completed ? 'Goal marked as incomplete' : 'Congratulations on completing your goal!',
-      [{ text: 'OK' }]
-    );
-  };
-
-  const handleEdit = () => {
-    Alert.alert('Edit Goal', 'Edit functionality would open here');
-    // navigation.navigate('EditGoal', { goal: currentGoal });
-  };
-
   const handleDelete = () => {
     Alert.alert(
       'Delete Goal',
@@ -122,11 +165,19 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
         { 
           text: 'Delete', 
           style: 'destructive',
-          onPress: () => {
-            if (onGoalUpdate) {
-              onGoalUpdate(currentGoal.id, 'delete');
+          onPress: async () => {
+            try {
+              if (Array.isArray(currentGoal.notificationIds) && currentGoal.notificationIds.length) {
+                await cancelScheduledNotifications(currentGoal.notificationIds);
+              }
+              if (currentGoal.id) {
+                await apiFetch(`/api/goals/${currentGoal.id}`, { method: 'DELETE' });
+              }
+              onGoalUpdate && onGoalUpdate(currentGoal.id, 'delete');
+              onGoBack();
+            } catch (e) {
+              Alert.alert('Error', 'Failed to delete goal.');
             }
-            onGoBack();
           }
         }
       ]
@@ -142,33 +193,6 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
     } catch (error) {
       Alert.alert('Error', 'Failed to share goal');
     }
-  };
-
-  const handleAddNote = () => {
-    Alert.prompt(
-      'Add Note',
-      'Enter your note:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Save', 
-          onPress: (note) => {
-            if (note) {
-              const updatedGoal = {
-                ...currentGoal,
-                notes: note
-              };
-              setCurrentGoal(updatedGoal);
-              if (onGoalUpdate) {
-                onGoalUpdate(updatedGoal);
-              }
-            }
-          }
-        }
-      ],
-      'plain-text',
-      currentGoal.notes || ''
-    );
   };
 
   const ProgressCircle = ({ completed, size = 100 }) => {
@@ -213,12 +237,6 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
         </TouchableOpacity>
         
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerButton} onPress={handleShare}>
-            <Ionicons name="share-outline" size={22} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} onPress={handleEdit}>
-            <Ionicons name="create-outline" size={22} color="#666" />
-          </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton} onPress={handleDelete}>
             <Ionicons name="trash-outline" size={22} color="#FF3B30" />
           </TouchableOpacity>
@@ -285,63 +303,83 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
           />
         </View>
 
-        {/* Notes Section */}
+        {/* Action Plan (Steps) */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Notes</Text>
-            <TouchableOpacity onPress={handleAddNote}>
-              <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
-            </TouchableOpacity>
+            <Text style={styles.sectionTitle}>Action Plan</Text>
+                <Ionicons name="sparkles-outline" size={22} color="#7C3AED" />
           </View>
-          
-          {currentGoal.notes ? (
-            <View style={styles.notesCard}>
-              <Text style={styles.notesText}>{currentGoal.notes}</Text>
-            </View>
-          ) : (
-            <TouchableOpacity style={styles.addNotesButton} onPress={handleAddNote}>
-              <Ionicons name="add" size={20} color="#007AFF" />
-              <Text style={styles.addNotesText}>Add notes to this goal</Text>
-            </TouchableOpacity>
-          )}
-        </View>
 
-        {/* Reminders Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Reminders</Text>
-          <View style={styles.remindersList}>
-            {currentGoal.reminders ? (
-              currentGoal.reminders.map((reminder, index) => (
-                <View key={index} style={styles.reminderItem}>
-                  <Ionicons name="notifications-outline" size={16} color="#007AFF" />
-                  <Text style={styles.reminderText}>{reminder}</Text>
-                </View>
-              ))
+          <View>
+            {/* Always show steps list */}
+            {currentGoal.steps && currentGoal.steps.length > 0 ? (
+              currentGoal.steps
+                .slice()
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                .map((s) => (
+                  <TouchableOpacity
+                    key={String(s.id)}
+                    style={[styles.stepItem, s.completed && styles.stepItemDone]}
+                    onPress={() => toggleStep(s.id)}
+                  >
+                    <View style={[styles.stepCheck, s.completed && styles.stepCheckDone]}>
+                      <Ionicons
+                        name={s.completed ? 'checkmark' : 'ellipse-outline'}
+                        size={18}
+                        color={s.completed ? '#fff' : '#666'}
+                      />
+                    </View>
+                    <View style={styles.stepContent}>
+                      <Text style={[styles.stepTitle, s.completed && styles.stepTitleDone]}>
+                        {s.title}
+                      </Text>
+                      {s.description ? (
+                        <Text style={[styles.stepDesc, s.completed && styles.stepDescDone]}>
+                          {s.description}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                ))
             ) : (
-              <Text style={styles.noRemindersText}>No reminders set</Text>
+              <Text style={styles.noStepsText}>No steps yet.</Text>
             )}
           </View>
+
         </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionSection}>
-          <TouchableOpacity 
-            style={[
-              styles.actionButton,
-              currentGoal.completed ? styles.completeButtonActive : styles.completeButton
-            ]}
-            onPress={toggleCompletion}
-          >
-            <Ionicons 
-              name={currentGoal.completed ? "refresh" : "checkmark"} 
-              size={20} 
-              color="#fff" 
-            />
-            <Text style={styles.actionButtonText}>
-              {currentGoal.completed ? 'Mark as Incomplete' : 'Mark as Complete'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Insights (visible when completed) */}
+        {currentGoal.completed ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Insights</Text>
+            </View>
+            <View style={styles.insightProgress}>
+              <View style={styles.progressBarBig}>
+                <View style={[styles.progressFillBig, { width: `${progressPct}%`, backgroundColor: '#34C759' }]} />
+              </View>
+              <Text style={styles.progressLabel}>{stepsDone}/{stepsTotal} steps • {progressPct}%</Text>
+            </View>
+            {recommendations ? (
+              <View style={styles.recoCard}>
+                <Text style={styles.recoTitle}>AI Recommendations</Text>
+                <Text style={styles.recoText}>{recommendations}</Text>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.generateRecoBtn} onPress={async () => {
+                try {
+                  const rec = await apiFetch(`/api/goals/${encodeURIComponent(currentGoal.id)}/recommendations`);
+                  setRecommendations(typeof rec?.recommendations === 'string' ? rec.recommendations : '');
+                } catch {
+                  Alert.alert('Error', 'Failed to load recommendations.');
+                }
+              }}>
+                <Ionicons name="sparkles-outline" size={18} color="#fff" />
+                <Text style={styles.generateRecoText}>Get AI Recommendations</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -352,6 +390,50 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 10,
+  },
+  stepItemDone: {
+    opacity: 0.7,
+  },
+  stepCheck: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    backgroundColor: '#fff',
+  },
+  stepCheckDone: {
+    backgroundColor: '#34C759',
+    borderColor: '#34C759',
+  },
+  stepContent: {
+    flex: 1,
+  },
+  stepTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  stepTitleDone: {
+    textDecorationLine: 'line-through',
+    color: '#666',
+  },
+  stepDesc: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  stepDescDone: {
+    textDecorationLine: 'line-through',
+    color: '#888',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -361,6 +443,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    marginTop:25
   },
   backButton: {
     flexDirection: 'row',
@@ -521,78 +604,87 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1a1a1a',
   },
-  notesCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 16,
-  },
-  notesText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-  },
-  addNotesButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-  },
-  addNotesText: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '500',
-    marginLeft: 8,
-  },
-  remindersList: {
-    marginTop: 8,
-  },
-  reminderItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  reminderText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 8,
-  },
-  noRemindersText: {
-    fontSize: 14,
-    color: '#999',
-    fontStyle: 'italic',
-  },
-  actionSection: {
-    padding: 16,
-    marginBottom: 20,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
+   insightProgress: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  completeButton: {
+  progressBarBig: {
+    height: 12,
+    backgroundColor: '#F1F1F1',
+    borderRadius: 6,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  progressFillBig: {
+    height: '100%',
+    borderRadius: 6,
+  },
+  progressLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#4A4A4A',
+    textAlign: 'center',
+  },
+
+  recoCard: {
+    backgroundColor: '#F8FAFF',
+    borderRadius: 16,
+    padding: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
+    marginBottom: 16,
+  },
+  recoTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 8,
+  },
+  recoText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#4A4A4A',
+  },
+
+  generateRecoBtn: {
     backgroundColor: '#007AFF',
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  completeButtonActive: {
-    backgroundColor: '#34C759',
-  },
-  actionButtonText: {
+  generateRecoText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: '#FFFFFF',
     marginLeft: 8,
   },
+
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 15,
+    color: '#8E8E93',
+    marginTop: 8,
+  },
+
 });
 
 export default GoalDetailScreen;

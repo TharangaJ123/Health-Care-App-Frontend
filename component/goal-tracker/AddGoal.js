@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { apiFetch } from '../../config/api';
 
 const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
   const [formData, setFormData] = useState({
@@ -29,6 +30,8 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [aiSuggestEnabled, setAiSuggestEnabled] = useState(false);
+  const [remoteSuggestions, setRemoteSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const goalTypes = [
     { id: 'physical', label: 'Physical', icon: 'fitness-outline', color: '#FF3B30' },
@@ -45,88 +48,54 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
     { id: 'low', label: 'Low', color: '#4CD964' },
   ];
 
-  // Mock AI suggestions mapped by goal type
-  const aiSuggestions = {
-    physical: [
-      {
-        title: '30-min Cardio Session',
-        description: 'Brisk walk or light jog to improve heart health.',
-        time: '06:30 AM',
-        priority: 'medium',
-      },
-      {
-        title: 'Strength Training - Full Body',
-        description: 'Bodyweight circuit: squats, push-ups, lunges, planks.',
-        time: '06:00 PM',
-        priority: 'high',
-      },
-    ],
-    mental: [
-      {
-        title: '10-min Mindfulness Meditation',
-        description: 'Breathing-focused meditation to reduce stress.',
-        time: '07:00 AM',
-        priority: 'high',
-      },
-      {
-        title: 'Gratitude Journal',
-        description: 'Write 3 things you are grateful for today.',
-        time: '09:00 PM',
-        priority: 'low',
-      },
-    ],
-    nutrition: [
-      {
-        title: 'Hydration Goal',
-        description: 'Drink 8 glasses of water throughout the day.',
-        time: 'All Day',
-        priority: 'medium',
-      },
-      {
-        title: 'Balanced Lunch',
-        description: 'Include lean protein, whole grains, and veggies.',
-        time: '01:00 PM',
-        priority: 'medium',
-      },
-    ],
-    sleep: [
-      {
-        title: 'No Screens Before Bed',
-        description: 'Avoid screens 60 minutes before bedtime.',
-        time: '10:00 PM',
-        priority: 'high',
-      },
-      {
-        title: 'Fixed Wake-up Time',
-        description: 'Wake at the same time to stabilize circadian rhythm.',
-        time: '06:30 AM',
-        priority: 'medium',
-      },
-    ],
-    social: [
-      {
-        title: 'Connect with a Friend',
-        description: 'Call or message someone you care about.',
-        time: '08:00 PM',
-        priority: 'low',
-      },
-    ],
-    other: [
-      {
-        title: 'Nature Break',
-        description: '10-min walk outside to refresh.',
-        time: '04:00 PM',
-        priority: 'low',
-      },
-    ],
+  const toggleReminder = (label) => {
+    setSelectedReminders((prev) =>
+      prev.includes(label)
+        ? prev.filter((r) => r !== label)
+        : [...prev, label]
+    );
   };
 
-  const getSuggestionsForType = (type) => aiSuggestions[type] || [];
+  const getSuggestionsForType = (type) => {
+    if (aiSuggestEnabled && remoteSuggestions && remoteSuggestions.length) {
+      return remoteSuggestions;
+    }
+    return [];
+  };
+
+  React.useEffect(() => {
+    const fetchAISuggestions = async () => {
+      if (!aiSuggestEnabled) {
+        setRemoteSuggestions([]);
+        return;
+      }
+      setLoadingSuggestions(true);
+      try {
+        const payload = { type: formData.type, title: formData.title, description: formData.description };
+        const resp = await apiFetch('/api/goals/generate-goals', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        const list = Array.isArray(resp?.suggestions) ? resp.suggestions : [];
+        const normalized = list.map((s) => ({
+          title: s.title || s.name || 'Suggested Goal',
+          description: s.description || s.summary || '',
+          time: s.time || 'Anytime',
+          priority: (s.priority || 'medium').toLowerCase(),
+        }));
+        setRemoteSuggestions(normalized);
+      } catch (e) {
+        setRemoteSuggestions([]);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+    fetchAISuggestions();
+  }, [aiSuggestEnabled, formData.type]);
 
   const parseTimeToDate = (timeString) => {
     if (!timeString || timeString.toLowerCase() === 'all day') return new Date();
     try {
-      // Expect formats like "06:30 AM"
       const [time, meridiem] = timeString.split(' ');
       const [hStr, mStr] = time.split(':');
       let hours = parseInt(hStr, 10);
@@ -147,7 +116,6 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
       title: s.title,
       description: s.description,
       priority: s.priority || prev.priority,
-      // Keep currently selected type and date; set time if present
       time: s.time ? parseTimeToDate(s.time) : prev.time,
     }));
     Alert.alert('AI Suggestion Applied', 'We pre-filled the form. You can still edit anything.');
@@ -209,7 +177,7 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
     return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
 
     const newGoal = {
@@ -224,10 +192,41 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
       createdAt: new Date().toISOString(),
     };
 
-    onAddGoal(newGoal);
-    Alert.alert('Success', 'Goal added successfully!', [
-      { text: 'OK', onPress: onGoBack }
-    ]);
+    const payload = {
+      name: String(newGoal.title || '').trim(),
+      startDate: String(newGoal.date || '').trim(),
+      endDate: String(newGoal.date || '').trim(),
+      priority: String(newGoal.priority || '').trim(),
+      description: newGoal.description,
+      type: newGoal.type,
+      time: newGoal.time,
+      completed: newGoal.completed,
+      createdAt: newGoal.createdAt,
+    };
+
+    try {
+      console.log('POST /api/goals payload:', payload);
+      const created = await apiFetch('/api/goals', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      const createdId = created?.id || created?._id;
+      if (createdId) {
+        try {
+          await apiFetch(`/api/goals/${encodeURIComponent(createdId)}/generate-steps`, { method: 'POST' });
+        } catch (e) {
+          console.log('generate-steps failed:', e?.message || e);
+        }
+      }
+      const createdForParent = createdId ? { ...newGoal, id: String(createdId) } : newGoal;
+      onAddGoal(createdForParent);
+      Alert.alert('Done', 'Goal created successfully.', [
+        { text: 'OK', onPress: onGoBack }
+      ]);
+    } catch (e) {
+      console.log('POST /api/goals error:', e);
+      Alert.alert('Error', String(e?.message || e || 'Failed to save goal.'));
+    }
   };
 
   const handleReset = () => {
@@ -283,6 +282,9 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
 
             {aiSuggestEnabled && (
               <View style={styles.suggestionsList}>
+                {loadingSuggestions ? (
+                  <Text style={{ color: '#666', marginBottom: 8 }}>Loading suggestions...</Text>
+                ) : null}
                 {getSuggestionsForType(formData.type).map((s, idx) => (
                   <TouchableOpacity
                     key={`${formData.type}-sugg-${idx}`}
@@ -343,7 +345,7 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
                 </TouchableOpacity>
               ))}
             </View>
-          <View/>
+          </View>
 
           
 
@@ -382,7 +384,6 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
               <Text style={styles.charCount}>{formData.description.length}/500</Text>
             </View>
           </View>
-      </View>
 
       {/* Schedule Section */}
       <View style={styles.section}>
@@ -506,6 +507,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    marginTop:25
   },
   backButton: {
     flexDirection: 'row',
@@ -747,6 +749,35 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     marginTop: 16,
+  },
+  remindersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  reminderChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#fff',
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  reminderChipActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  reminderChipText: {
+    marginLeft: 6,
+    fontSize: 13,
+    color: '#333',
+    fontWeight: '600',
+  },
+  reminderChipTextActive: {
+    color: '#fff',
   },
   cancelButton: {
     flex: 1,

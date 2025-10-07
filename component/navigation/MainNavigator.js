@@ -14,13 +14,14 @@ import BlogDetailScreen from '../blog/BlogDetailScreen';
 
 import BottomNav from './BottomNav';
 
-import { Home } from 'lucide-react';
+import { Home } from 'lucide-react-native';
 
 const MainNavigator = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [currentScreen, setCurrentScreen] = useState('home');
   const [selectedBlogPost, setSelectedBlogPost] = useState(null);
   const [selectedGoal, setSelectedGoal] = useState(null);
+  const [goalsRefreshTick, setGoalsRefreshTick] = useState(0);
 
   const handleNavigateToAddGoal = () => {
     setCurrentScreen('addGoal');
@@ -52,13 +53,25 @@ const MainNavigator = () => {
 
   const handleAddGoal = (newGoal) => {
     console.log('New goal added:', newGoal);
+    setGoalsRefreshTick((t) => t + 1);
     setCurrentScreen('home');
+  };
+
+  const handleGoalUpdated = (updatedOrId, action) => {
+    // action can be 'delete' or undefined for update
+    setGoalsRefreshTick((t) => t + 1);
+    if (action === 'delete') {
+      setCurrentScreen('goal');
+    }
   };
 
   const handleTabPress = (tab) => {
     setActiveTab(tab);
     if (tab === 'blog') {
       setCurrentScreen('blog');
+    } else if (tab === 'add') {
+      // Route the center add button to the Add Goal screen
+      setCurrentScreen('addGoal');
     } else {
       setCurrentScreen(tab);
     }
@@ -87,6 +100,7 @@ const MainNavigator = () => {
           <GoalDetail 
             goal={selectedGoal}
             onGoBack={handleGoBackFromGoalDetail}
+            onGoalUpdate={handleGoalUpdated}
           />
         );
       default:
@@ -102,6 +116,7 @@ const MainNavigator = () => {
           <GoalTrackerIndex 
             onNavigateToAddGoal={handleNavigateToAddGoal}
             onNavigateToGoalDetail={handleNavigateToGoalDetail}
+            refreshSignal={goalsRefreshTick}
           />
         );
       case 'blog':
@@ -115,10 +130,10 @@ const MainNavigator = () => {
     }
   };
 
-  const shouldShowBottomNav = !['addGoal', 'blogDetail', 'goalDetail'].includes(currentScreen);
+  const shouldShowBottomNav = true;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, shouldShowBottomNav && { paddingBottom: 110 }]}>
       {renderScreen()}
       {shouldShowBottomNav && (
         <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
