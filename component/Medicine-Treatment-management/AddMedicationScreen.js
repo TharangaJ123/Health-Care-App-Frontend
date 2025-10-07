@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { saveMedication } from '../../utils/storage';
 import { theme } from '../../utils/theme';
 import { getSampleMedicationCategories, getMedicationColors } from '../../utils/sampleData';
-import Header from '../../components/Header';
+import Header from '../Header';
 import { scheduleMedicationReminder } from '../../services/NotificationService';
 
 const AddMedicationScreen = ({ navigation }) => {

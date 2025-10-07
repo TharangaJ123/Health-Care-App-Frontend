@@ -9,17 +9,17 @@ import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@
 import { requestNotificationPermissions, handleNotificationResponse, clearNonMedicationNotifications } from './services/NotificationService';
 
 // Import screens
-import SplashScreen from './screens/Medicine-Treatment-management/SplashScreen';
-import OnboardingScreen from './screens/Medicine-Treatment-management/OnboardingScreen';
+import SplashScreen from './component/Medicine-Treatment-management/SplashScreen';
+import OnboardingScreen from './component/Medicine-Treatment-management/OnboardingScreen';
 // Import HomeScreen component using default import
-import HomeScreen from './screens/Medicine-Treatment-management/HomeScreen';
-import AddMedicationScreen from './screens/Medicine-Treatment-management/AddMedicationScreen';
-import EditMedicationScreen from './screens/Medicine-Treatment-management/EditMedicationScreen';
-import RemindersScreen from './screens/Medicine-Treatment-management/RemindersScreen';
-import ReportsScreen from './screens/Medicine-Treatment-management/ReportsScreen';
-import ProfileScreen from './screens/Medicine-Treatment-management/ProfileScreen';
-import SettingsScreen from './screens/Medicine-Treatment-management/SettingsScreen';
-import TrackerScreen from './screens/Medicine-Treatment-management/TrackerScreen';
+import HomeScreen from './component/Medicine-Treatment-management/HomeScreen';
+import AddMedicationScreen from './component/Medicine-Treatment-management/AddMedicationScreen';
+import EditMedicationScreen from './component/Medicine-Treatment-management/EditMedicationScreen';
+import RemindersScreen from './component/Medicine-Treatment-management/RemindersScreen';
+import ReportsScreen from './component/Medicine-Treatment-management/ReportsScreen';
+import ProfileScreen from './component/Medicine-Treatment-management/ProfileScreen';
+import SettingsScreen from './component/Medicine-Treatment-management/SettingsScreen';
+import TrackerScreen from './component/Medicine-Treatment-management/TrackerScreen';
 
 // Create placeholder components for missing screens
 const AppointmentsScreen = () => (

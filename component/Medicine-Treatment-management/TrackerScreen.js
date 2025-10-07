@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../utils/theme';
 import { getSchedule, getWeeklyAdherence, getAdherenceStats } from '../../utils/storage';
 import { useFocusEffect } from '@react-navigation/native';
-import Header from '../../components/Header';
+import Header from '../Header';
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 

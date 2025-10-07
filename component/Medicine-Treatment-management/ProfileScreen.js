@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import StorageService from '../../services/StorageService';
 import { theme } from '../../utils/theme';
-import Header from '../../components/Header';
+import Header from '../Header';
 
 const ProfileScreen = ({ navigation }) => {
   const [profile, setProfile] = useState({

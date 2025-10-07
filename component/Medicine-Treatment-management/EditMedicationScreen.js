@@ -16,7 +16,7 @@ import { getMedications, updateMedication, deleteMedication } from '../../utils/
 import { scheduleMedicationReminder, cancelScheduledReminder } from '../../services/NotificationService';
 import { getSampleMedicationCategories, getMedicationColors } from '../../utils/sampleData';
 import { theme } from '../../utils/theme';
-import Header from '../../components/Header';
+import Header from '../Header';
 
 const EditMedicationScreen = ({ navigation, route }) => {
   const { medicationId } = route.params;

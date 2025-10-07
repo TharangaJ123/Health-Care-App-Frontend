@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import StorageService from '../../services/StorageService';
-import Header from '../../components/Header';
+import Header from '../Header';
 
 const RemindersScreen = ({ navigation }) => {
   const [medications, setMedications] = useState([]);
