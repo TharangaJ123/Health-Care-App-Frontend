@@ -28,7 +28,7 @@ const BottomNav = ({ activeTab, onTabPress }) => {
     },
     {
       id: 'add',
-      label: '',
+      label: 'Dashboard',
       iconName: 'add',
       iconSet: 'Ionicons',
       isCenter: true,

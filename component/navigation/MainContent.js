@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 import GoalTrackerIndex from '../goal-tracker/index';
 import AddGoal from '../goal-tracker/AddGoal';
@@ -9,12 +9,11 @@ import GoalDetail from '../goal-tracker/goal-detail';
 import BlogIndex from '../blog/index';
 import BlogDetailScreen from '../blog/BlogDetailScreen';
 
-import BottomNav from './BottomNav';
-
-import { Home } from 'lucide-react-native';
+import HomeScreen from '../../feature/Medicine-treatment-management/HomeScreen';
 
 const MainContent = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const [activeTab, setActiveTab] = useState('home');
   const [currentScreen, setCurrentScreen] = useState('home');
   const [selectedBlogPost, setSelectedBlogPost] = useState(null);
@@ -65,17 +64,27 @@ const MainContent = () => {
   const handleTabPress = (tab) => {
     setActiveTab(tab);
     if (tab === 'home') {
-      // Navigate to the stack screen named 'Home'
-      navigation.navigate('Home');
       setCurrentScreen('home');
     } else if (tab === 'blog') {
       setCurrentScreen('blog');
     } else if (tab === 'add') {
-      // setCurrentScreen('addGoal');
+      setCurrentScreen('addGoal');
     } else {
       setCurrentScreen(tab);
     }
   };
+
+  // Sync from route params when navigating here from global bottom nav
+  React.useEffect(() => {
+    const desiredTab = route?.params?.tab;
+    if (desiredTab) {
+      setActiveTab(desiredTab);
+      if (desiredTab === 'home') setCurrentScreen('home');
+      else if (desiredTab === 'blog') setCurrentScreen('blog');
+      else if (desiredTab === 'add') setCurrentScreen('addGoal');
+      else setCurrentScreen(desiredTab);
+    }
+  }, [route?.params?.tab]);
 
   const renderScreen = () => {
     console.log('Current screen:', currentScreen);
@@ -109,7 +118,7 @@ const MainContent = () => {
 
     switch (activeTab) {
       case 'home':
-        return <Home/>;
+        return <HomeScreen/>;
       case 'goal':
         return (
           <GoalTrackerIndex
@@ -121,19 +130,13 @@ const MainContent = () => {
       case 'blog':
         return <BlogIndex onNavigateToBlogDetail={handleNavigateToBlogDetail} />;
       default:
-        return <Home/>;
+        return <HomeScreen/>;
     }
-    
   };
 
-  const shouldShowBottomNav = true;
-
   return (
-    <View style={[styles.container, shouldShowBottomNav && { paddingBottom: 110 }]}>
+    <View style={[styles.container]}>
       {renderScreen()}
-      {shouldShowBottomNav && (
-        <BottomNav activeTab={activeTab} onTabPress={handleTabPress} />
-      )}
     </View>
   );
 };
