@@ -139,7 +139,8 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   const handleViewDashboard = () => {
-    navigation.navigate('ViewDashboard');
+    // Stay within registered routes; 'ViewDashboard' does not exist
+    navigation.navigate('Dashboard');
   };
 
   const handlemonitorhealth = () => {

@@ -69,7 +69,6 @@ const styles = StyleSheet.create({
   logoImage: {
     width: 200,
     height: 200,
-    resizeMode: 'contain',
     marginBottom: 20,
   },
   appName: {
