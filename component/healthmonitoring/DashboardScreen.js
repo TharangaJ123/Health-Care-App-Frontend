@@ -204,11 +204,9 @@ const DashboardScreen = ({ navigation }) => {
               styles.healthAlertBar,
               { 
                 backgroundColor: healthNotifications.length > 0 
-                  ? (healthNotifications.some(n => !n.isRead) 
-                      ? ' #2ecc71' // Light gray for unread alerts
-                      : (healthNotifications.some(n => n.status === 'high' || n.status === 'low') 
-                          ? '#e74c3c' // Red for high priority
-                          : '#f39c12')) // Orange for warnings
+                  ? (healthNotifications.some(n => n.status === 'high' || n.status === 'low') 
+                      ? '#e74c3c' // Red for high/low priority
+                      : '#f39c12') // Orange for warnings
                   : '#2ecc71', // Green for no alerts
                 opacity: healthNotifications.length > 0 ? 1 : 0.8
               }
@@ -302,7 +300,7 @@ const DashboardScreen = ({ navigation }) => {
             </View>
           )}
 
-{/* Health Cards Section */}
+          {/* Health Cards Section */}
           <View style={styles.healthCardsContainer}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Latest Health Updates</Text>

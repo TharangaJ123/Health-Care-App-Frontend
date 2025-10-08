@@ -128,6 +128,12 @@ class ApiService {
       }
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Provide specific error message for 403
+      if (error.message.includes('403')) {
+        throw new Error('Email not verified. Please check your email and verify your account before logging in.');
+      }
+      
       throw error;
     }
   }

@@ -111,7 +111,13 @@ const LoginScreen = ({ navigation, onLogin }) => {
 
     } catch (error) {
       console.error('❌ Login error:', error);
-      setLoginError(error.message || 'Login failed. Please check your connection and try again.');
+      
+      // Check if it's a 403 error (email not verified)
+      if (error.message.includes('403')) {
+        setLoginError('Email not verified. Please check your email and verify your account before logging in.');
+      } else {
+        setLoginError(error.message || 'Login failed. Please check your connection and try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -119,7 +125,7 @@ const LoginScreen = ({ navigation, onLogin }) => {
 
   const handleGoogleLogin = async () => {
     try {
-      // TODO: Implement Google login
+      // Implement Google login
       console.log('Google login attempt for:', userType);
       Alert.alert('Info', 'Google login will be implemented with proper configuration');
     } catch (error) {
@@ -265,7 +271,11 @@ const LoginScreen = ({ navigation, onLogin }) => {
                 }}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={24}
+                  color="#666"
+                />
               </TouchableOpacity>
             </View>
             {password && (
@@ -322,7 +332,7 @@ const LoginScreen = ({ navigation, onLogin }) => {
           <Text style={authStyles.googleButtonText}>Continue with Google</Text>
         </TouchableOpacity>
 
-        {/* Footer */}
+       
         <View style={authStyles.footer}>
           <Text style={authStyles.footerText}>
             Don't have an account?{' '}
