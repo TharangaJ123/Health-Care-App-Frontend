@@ -8,8 +8,9 @@ import {
   ScrollView,
   Alert,
   Platform,
-  SafeAreaView,
 } from 'react-native';
+
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { getMedications, updateMedication, deleteMedication } from '../../utils/storage';

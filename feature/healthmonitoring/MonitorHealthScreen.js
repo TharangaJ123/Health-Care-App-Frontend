@@ -3,7 +3,6 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  SafeAreaView, 
   ScrollView, 
   TouchableOpacity, 
   Image, 
@@ -11,6 +10,7 @@ import {
   StatusBar,
   Animated
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');

@@ -50,6 +50,20 @@ export const scheduleMedicationReminder = async (medication) => {
     return;
   }
 
+  // Helper: compute 15-minute pre-reminder slot, adjusting day if needed
+  const PRE_REMINDER_MINUTES = 15; // configurable lead time
+  const subtractMinutes = (hour, minute, minutesToSubtract) => {
+    let total = hour * 60 + minute - minutesToSubtract;
+    let dayOffset = 0;
+    if (total < 0) {
+      total = (24 * 60) + total; // wrap backwards
+      dayOffset = -1; // previous day
+    }
+    const newHour = Math.floor(total / 60);
+    const newMinute = total % 60;
+    return { hour: newHour, minute: newMinute, dayOffset };
+  };
+
   // Schedule new notifications for each reminder time
   for (const time of reminderTimes) {
     // Parse time string (e.g., "08:00 AM" or "08:00")
@@ -65,14 +79,15 @@ export const scheduleMedicationReminder = async (medication) => {
       [hours, minutes] = time.split(':').map(Number);
     }
     
-    // Create a notification for each day of the week that the medication is scheduled
+    // Create notifications for each day of the week that the medication is scheduled
     const daysOfWeek = medication.daysOfWeek || [0, 1, 2, 3, 4, 5, 6]; // Default to all days
     for (const day of daysOfWeek) {
-      const notificationId = await schedulePushNotification(
-        `med-${medication.id}-${day}-${time}`,
+      // On-time reminder
+      const onTimeId = await schedulePushNotification(
+        `med-${medication.id}-${day}-${time}-ontime`,
         {
           title: '💊 Time for Medication',
-          body: `It's time to take ${medication.name} (${medication.dosage})`,
+          body: `It's time to take ${medication.name}${medication.dosage ? ` (${medication.dosage})` : ''}`,
           data: { medicationId: medication.id, type: 'medication-reminder' },
         },
         {
@@ -82,8 +97,26 @@ export const scheduleMedicationReminder = async (medication) => {
           repeats: true,
         }
       );
-      
-      console.log(`Scheduled notification ${notificationId} for ${medication.name} at ${time} on day ${day}`);
+
+      // Pre-reminder (e.g., 15 minutes before). Adjust weekday if crosses previous day
+      const pre = subtractMinutes(hours, minutes, PRE_REMINDER_MINUTES);
+      const preWeekday = ((day + (pre.dayOffset === -1 ? -1 : 0)) + 7) % 7; // normalize 0-6
+      const preId = await schedulePushNotification(
+        `med-${medication.id}-${preWeekday}-${time}-pre${PRE_REMINDER_MINUTES}`,
+        {
+          title: '⏰ Upcoming Medication',
+          body: `${medication.name}${medication.dosage ? ` (${medication.dosage})` : ''} in ${PRE_REMINDER_MINUTES} minutes`,
+          data: { medicationId: medication.id, type: 'medication-reminder' },
+        },
+        {
+          hour: pre.hour,
+          minute: pre.minute,
+          weekday: preWeekday + 1,
+          repeats: true,
+        }
+      );
+
+      console.log(`Scheduled on-time ${onTimeId} at ${hours}:${String(minutes).padStart(2,'0')} and pre-reminder ${preId} at ${pre.hour}:${String(pre.minute).padStart(2,'0')} for ${medication.name} on day ${day}`);
     }
   }
 };
