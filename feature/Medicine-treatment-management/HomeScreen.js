@@ -276,6 +276,20 @@ const HomeScreen = () => {
         backgroundColor="#F3F4F6" 
         translucent={false} 
       />
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.headerTitle}>Health Tracker</Text>
+          <View style={styles.onlineStatus}>
+            <View style={[styles.statusDot, { backgroundColor: isOnline ? '#10B981' : '#EF4444' }]} />
+            <Text style={styles.onlineText}>{isOnline ? 'Online' : 'Offline'}</Text>
+          </View>
+        </View>
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <View style={styles.profileIcon}>
+            <Ionicons name="person-outline" size={24} color="#2563EB" />
+          </View>
+        </TouchableOpacity>
+      </View>
       <ScrollView 
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -287,21 +301,6 @@ const HomeScreen = () => {
           />
         }
       >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.headerTitle}>Health Tracker</Text>
-            <View style={styles.onlineStatus}>
-              <View style={[styles.statusDot, { backgroundColor: isOnline ? '#10B981' : '#EF4444' }]} />
-              <Text style={styles.onlineText}>{isOnline ? 'Online' : 'Offline'}</Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <View style={styles.profileIcon}>
-              <Ionicons name="person-outline" size={24} color="#2563EB" />
-            </View>
-          </TouchableOpacity>
-        </View>
-
         <View style={styles.card}>
           <Calendar
             current={selectedDate}
