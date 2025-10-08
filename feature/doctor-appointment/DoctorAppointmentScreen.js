@@ -51,6 +51,7 @@ function DoctorAppointmentScreen({ navigation }) {
 
     try {
       await saveAppointment({
+        doctorId: selectedDoctor.id,
         doctorName: selectedDoctor.name,
         doctorSpecialization: selectedDoctor.specialization,
         patientName,
