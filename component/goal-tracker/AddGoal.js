@@ -16,8 +16,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { apiFetch } from '../../config/api';
+import { useUser } from '../../context/UserContext';
 
 const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
+  const { user } = useUser();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -26,42 +28,11 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
     time: new Date(),
     priority: 'medium',
   });
-  
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [aiSuggestEnabled, setAiSuggestEnabled] = useState(false);
   const [remoteSuggestions, setRemoteSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-
-  const goalTypes = [
-    { id: 'physical', label: 'Physical', icon: 'fitness-outline', color: '#FF3B30' },
-    { id: 'mental', label: 'Mental', icon: 'brain-outline', color: '#5856D6' },
-    { id: 'nutrition', label: 'Nutrition', icon: 'nutrition-outline', color: '#34C759' },
-    { id: 'sleep', label: 'Sleep', icon: 'moon-outline', color: '#007AFF' },
-    { id: 'social', label: 'Social', icon: 'people-outline', color: '#FF9500' },
-    { id: 'other', label: 'Other', icon: 'flag-outline', color: '#8E8E93' },
-  ];
-
-  const priorities = [
-    { id: 'high', label: 'High', color: '#FF3B30' },
-    { id: 'medium', label: 'Medium', color: '#FF9500' },
-    { id: 'low', label: 'Low', color: '#4CD964' },
-  ];
-
-  const toggleReminder = (label) => {
-    setSelectedReminders((prev) =>
-      prev.includes(label)
-        ? prev.filter((r) => r !== label)
-        : [...prev, label]
-    );
-  };
-
-  const getSuggestionsForType = (type) => {
-    if (aiSuggestEnabled && remoteSuggestions && remoteSuggestions.length) {
-      return remoteSuggestions;
-    }
-    return [];
-  };
 
   React.useEffect(() => {
     const fetchAISuggestions = async () => {
@@ -91,32 +62,37 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
       }
     };
     fetchAISuggestions();
-  }, [aiSuggestEnabled, formData.type]);
+  }, [aiSuggestEnabled, formData.type, formData.title, formData.description]);
 
-  const parseTimeToDate = (timeString) => {
-    if (!timeString || timeString.toLowerCase() === 'all day') return new Date();
-    try {
-      const [time, meridiem] = timeString.split(' ');
-      const [hStr, mStr] = time.split(':');
-      let hours = parseInt(hStr, 10);
-      const minutes = parseInt(mStr || '0', 10);
-      if (meridiem && meridiem.toUpperCase() === 'PM' && hours < 12) hours += 12;
-      if (meridiem && meridiem.toUpperCase() === 'AM' && hours === 12) hours = 0;
-      const d = new Date();
-      d.setHours(hours, minutes, 0, 0);
-      return d;
-    } catch {
-      return new Date();
+  
+  const goalTypes = [
+    { id: 'physical', label: 'Physical', icon: 'fitness-outline', color: '#FF3B30' },
+    { id: 'mental', label: 'Mental', icon: 'brain-outline', color: '#5856D6' },
+    { id: 'nutrition', label: 'Nutrition', icon: 'nutrition-outline', color: '#34C759' },
+    { id: 'sleep', label: 'Sleep', icon: 'moon-outline', color: '#007AFF' },
+    { id: 'social', label: 'Social', icon: 'people-outline', color: '#FF9500' },
+    { id: 'other', label: 'Other', icon: 'flag-outline', color: '#8E8E93' },
+  ];
+
+  const priorities = [
+    { id: 'high', label: 'High', color: '#FF3B30' },
+    { id: 'medium', label: 'Medium', color: '#FF9500' },
+    { id: 'low', label: 'Low', color: '#4CD964' },
+  ];
+
+  const getSuggestionsForType = (type) => {
+    if (aiSuggestEnabled && remoteSuggestions && remoteSuggestions.length) {
+      return remoteSuggestions;
     }
+    return [];
   };
 
   const handleApplySuggestion = (s) => {
     setFormData((prev) => ({
       ...prev,
-      title: s.title,
-      description: s.description,
+      title: s.title || prev.title,
+      description: s.description || prev.description,
       priority: s.priority || prev.priority,
-      time: s.time ? parseTimeToDate(s.time) : prev.time,
     }));
     Alert.alert('AI Suggestion Applied', 'We pre-filled the form. You can still edit anything.');
   };
@@ -202,6 +178,7 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
       time: newGoal.time,
       completed: newGoal.completed,
       createdAt: newGoal.createdAt,
+      userId: user?.uid || user?.email || undefined,
     };
 
     try {

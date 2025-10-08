@@ -13,8 +13,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
 import { apiFetch } from '../../config/api';
+import { useUser } from '../../context/UserContext';
 
 const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refreshSignal }) => {
+  const { user } = useUser();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [goals, setGoals] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
@@ -23,7 +25,7 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
 
   useEffect(() => {
     loadGoals();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (typeof refreshSignal !== 'undefined') {
@@ -46,18 +48,20 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
 
   const loadGoals = async () => {
     try {
-      const data = await apiFetch('/api/goals');
-      if (Array.isArray(data) && data.length) {
-        const mapped = data.map((g, i) => normalizeGoal(g, i));
-        setGoals(mapped);
-        updateMarkedDates(mapped);
+      if (!user) {
+        setGoals([]);
+        updateMarkedDates([]);
         return;
       }
+      const q = `?userId=${encodeURIComponent(user.uid || user.email)}`;
+      const data = await apiFetch(`/api/goals${q}`);
+      const mapped = Array.isArray(data) ? data.map((g, i) => normalizeGoal(g, i)) : [];
+      setGoals(mapped);
+      updateMarkedDates(mapped);
     } catch (e) {
-      // ignore and fallback
+      setGoals([]);
+      updateMarkedDates([]);
     }
-    setGoals(sampleGoals);
-    updateMarkedDates(sampleGoals);
   };
 
   const openActions = (goal) => {

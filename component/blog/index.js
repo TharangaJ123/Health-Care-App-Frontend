@@ -14,9 +14,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { apiFetch } from '../../config/api';
+import { useUser } from '../../context/UserContext';
 import CreateBlogScreen from './CreateBlogScreen';
 
 const BlogScreen = ({ onNavigateToBlogDetail }) => {
+  const { user } = useUser();
   const [posts, setPosts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -142,21 +144,25 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
   });
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+  const isOwner = (post) => {
+    const owner = String(post?.userId || '');
+    const me = String(user?.uid || user?.email || '');
+    return owner && me && owner === me;
   };
 
   const renderPostItem = ({ item }) => {
     const categoryColor = getCategoryColor(item.category);
-
     return (
       <TouchableOpacity style={styles.postCard} onPress={() => handlePostPress(item)}>
         {/* Category Header */}
         <View style={[styles.categoryHeader, { backgroundColor: categoryColor + '15' }]}>
           <View style={styles.categoryLeft}>
-            <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} />
             <Text style={[styles.categoryText, { color: categoryColor }]}>
               {item.category}
             </Text>
@@ -170,7 +176,19 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
             )}
             <TouchableOpacity
               style={styles.menuButton}
-              onPress={() => { setMenuPost(item); setMenuVisible(true); }}
+              onPress={() => {
+                if (!isOwner(item)) {
+                  Alert.alert('Not allowed', 'You do not have permission to modify this blog', [
+                    {
+                      text: 'OK',
+                      onPress: () => {},
+                    },
+                  ]);
+                  return;
+                }
+                setMenuPost(item);
+                setMenuVisible(true);
+              }}
             >
               <Ionicons name="ellipsis-vertical" size={18} color="#666" />
             </TouchableOpacity>
@@ -233,11 +251,19 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
   };
 
   const handleEdit = (post) => {
+    if (!isOwner(post)) {
+      Alert.alert('Not allowed', 'You do not have permission to edit this blog');
+      return;
+    }
     setEditingPost(post);
     setShowCreate(true);
   };
 
   const handleDelete = (post) => {
+    if (!isOwner(post)) {
+      Alert.alert('Not allowed', 'You do not have permission to delete this blog');
+      return;
+    }
     setPendingDelete(post);
     setConfirmText('');
     setConfirmVisible(true);
@@ -246,7 +272,8 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
   const performDelete = async () => {
     if (!pendingDelete) return;
     const targetId = String(pendingDelete.id || pendingDelete._id);
-    const url = `/api/blogs/${encodeURIComponent(targetId)}`;
+    const me = encodeURIComponent(user?.uid || user?.email || '');
+    const url = `/api/blogs/${encodeURIComponent(targetId)}?userId=${me}`;
     console.log('DELETE request:', url);
     try {
       await apiFetch(url, { method: 'DELETE' });
