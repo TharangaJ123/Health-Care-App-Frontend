@@ -1,136 +1,149 @@
-import * as React from 'react';
+import React, { useEffect, useRef, useState, createContext, useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
-import { Alert } from 'react-native';
+import { Platform, View, Text, StyleSheet } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { requestNotificationPermissions, handleNotificationResponse, clearNonMedicationNotifications } from './services/NotificationService';
+import { UserContext } from './context/UserContext';
+
+// Import screens
+import SplashScreen from './feature/Medicine-treatment-management/SplashScreen';
+import OnboardingScreen from './feature/Medicine-treatment-management/OnboardingScreen';
 import LoginScreen from './feature/auth/LoginScreen';
 import SignupScreen from './feature/auth/SignupScreen';
-import ForgotPasswordScreen from './feature/auth/ForgotPasswordScreen';
+// Import HomeScreen component using default import
+import HomeScreen from './feature/Medicine-treatment-management/HomeScreen';
+import AddMedicationScreen from './feature/Medicine-treatment-management/AddMedicationScreen';
+import EditMedicationScreen from './feature/Medicine-treatment-management/EditMedicationScreen';
+import RemindersScreen from './feature/Medicine-treatment-management/RemindersScreen';
+import ReportsScreen from './feature/Medicine-treatment-management/ReportsScreen';
+import ProfileScreen from './feature/Medicine-treatment-management/ProfileScreen';
+import SettingsScreen from './feature/Medicine-treatment-management/SettingsScreen';
+import TrackerScreen from './feature/Medicine-treatment-management/TrackerScreen';
 import DashboardScreen from './feature/healthmonitoring/DashboardScreen';
-import HealthDataInputScreen from './feature/healthmonitoring/HealthDataInputScreen';
-import HealthDataHistoryScreen from './feature/healthmonitoring/HealthDataHistoryScreen';
-import MonitorHealthScreen from './feature/healthmonitoring/MonitorHealthScreen';
-import { HealthDataProvider } from './context/HealthDataContext';
-import ApiService from './services/ApiService';
+
+// Create placeholder components for missing screens
+const AppointmentsScreen = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <Text>Appointments Screen</Text>
+  </View>
+);
+
+const HealthScreen = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <Text>Health Screen</Text>
+  </View>
+);
+
+const MoreScreen = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <Text>More Screen</Text>
+  </View>
+);
+
 
 const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
 
-// Health Stack Navigator
-function HealthStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="Dashboard" component={DashboardScreen} />
-      <Stack.Screen name="AddHealthData" component={HealthDataInputScreen} />
-      <Stack.Screen name="ViewDashboard" component={HealthDataHistoryScreen} />
-      <Stack.Screen name="MonitorHealth" component={MonitorHealthScreen} />
-    </Stack.Navigator>
-  );
-}
+// Root App component with navigation container and stacks
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-// Auth Stack
-function AuthStack({ onLogin, onSignupSuccess }) {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="Login">
-        {({ navigation }) => <LoginScreen navigation={navigation} onLogin={(email, password) => onLogin(email, password, navigation)} />}
-      </Stack.Screen>
-      <Stack.Screen name="Signup">
-        {({ navigation }) => <SignupScreen navigation={navigation} onSignupSuccess={onSignupSuccess} />}
-      </Stack.Screen>
-      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-    </Stack.Navigator>
-  );
-}
+  useEffect(() => {
+    // Request notification permissions and set response handler
+    requestNotificationPermissions();
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      handleNotificationResponse
+    );
 
-export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  const [registeredUsers, setRegisteredUsers] = React.useState([]);
+    // Clean up non-medication notifications on app start
+    clearNonMedicationNotifications();
 
-  const handleLogin = async (email, password, navigation) => {
+    // Check for stored user data
+    checkStoredUser();
+
+    return () => subscription.remove();
+  }, []);
+
+  const checkStoredUser = async () => {
     try {
-      console.log('🔐 Attempting login with Firebase backend...');
-      console.log('📧 Email:', email);
-
-      // Call the actual Firebase backend API
-      const response = await ApiService.login({ email, password });
-
-      if (response.success) {
-        console.log('✅ Login successful!');
-        console.log('👤 User:', response.user.email);
-
-        // Set authentication state - this will trigger navigation to HealthApp
-        setIsAuthenticated(true);
-
-        // Store user data for the app to use
-        console.log('🔄 Authentication state updated, navigation will switch to HealthApp');
-
-        return true;
-      } else {
-        console.log('❌ Login failed:', response.error);
-
-        // Show error message
-        Alert.alert(
-          'Login Failed',
-          response.error || 'Invalid email or password. Please check your credentials and try again.',
-          [{ text: 'OK' }]
-        );
-
-        return false;
+      const storedUser = await AsyncStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
       }
-
     } catch (error) {
-      console.error('❌ Login error:', error);
-
-      // Show error message
-      Alert.alert(
-        'Login Error',
-        error.message || 'Failed to login. Please check your connection and try again.',
-        [{ text: 'OK' }]
-      );
-
-      return false;
+      console.error('Error checking stored user:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSignupSuccess = (userData) => {
-    // Store the new user data for login validation
-    if (userData) {
-      setRegisteredUsers(prev => [...prev, userData]);
+  const login = async (userData) => {
+    try {
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+    } catch (error) {
+      console.error('Error saving user data:', error);
     }
-    console.log('Signup successful - user data stored for login');
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
+  const logout = async () => {
+    try {
+      await AsyncStorage.removeItem('user');
+      setUser(null);
+    } catch (error) {
+      console.error('Error removing user data:', error);
+    }
   };
+
+  const updateUser = async (updatedUserData) => {
+    try {
+      const newUserData = { ...user, ...updatedUserData };
+      await AsyncStorage.setItem('user', JSON.stringify(newUserData));
+      setUser(newUserData);
+    } catch (error) {
+      console.error('Error updating user data:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
-    <HealthDataProvider>
+    <UserContext.Provider value={{ user, login, logout, updateUser }}>
       <NavigationContainer>
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-          {isAuthenticated ? (
-            <Stack.Screen name="HealthApp" component={HealthStack} />
-          ) : (
-            <Stack.Screen name="Auth">
-              {() => <AuthStack onLogin={handleLogin} onSignupSuccess={handleSignupSuccess} />}
-            </Stack.Screen>
-          )}
+        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Splash">
+          <Stack.Screen key="splash" name="Splash" component={SplashScreen} />
+          <Stack.Screen key="onboarding" name="Onboarding" component={OnboardingScreen} />
+          <Stack.Screen key="login" name="Login" component={LoginScreen} />
+          <Stack.Screen key="signup" name="Signup" component={SignupScreen} />
+          <Stack.Screen key="home" name="Home" component={HomeScreen} />
+          <Stack.Screen key="appointments" name="Appointments" component={AppointmentsScreen} />
+          <Stack.Screen key="health" name="Health" component={HealthScreen} />
+          <Stack.Screen key="profile" name="Profile" component={ProfileScreen} />
+          <Stack.Screen key="more" name="More" component={MoreScreen} />
+          <Stack.Screen key="addMedication" name="AddMedication" component={AddMedicationScreen} />
+          <Stack.Screen key="editMedication" name="EditMedication" component={EditMedicationScreen} />
+          <Stack.Screen key="reminders" name="Reminders" component={RemindersScreen} />
+          <Stack.Screen key="reports" name="Reports" component={ReportsScreen} />
+          <Stack.Screen key="settings" name="Settings" component={SettingsScreen} />
+          <Stack.Screen key="tracker" name="Tracker" component={TrackerScreen} />
+          <Stack.Screen key="dashboard" name="Dashboard" component={DashboardScreen} />
         </Stack.Navigator>
       </NavigationContainer>
-    </HealthDataProvider>
+    </UserContext.Provider>
   );
-}
+};
+
+const styles = StyleSheet.create({});
+
+export default App;

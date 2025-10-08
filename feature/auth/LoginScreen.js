@@ -11,11 +11,12 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ApiService from '../../services/ApiService';
+import { useUser } from '../../App';
 import { authStyles } from './styles/AuthStyles';
 import { validateField } from './validationUtils';
 
-const LoginScreen = ({ navigation, onLogin }) => {
+const LoginScreen = ({ navigation }) => {
+  const { login } = useUser();
   const [userType, setUserType] = useState('patient');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -87,22 +88,27 @@ const LoginScreen = ({ navigation, onLogin }) => {
     setLoading(true);
 
     try {
-      console.log('🔐 Attempting login with backend...');
+      console.log('🔐 Attempting login...');
       console.log('📧 Email:', email);
-      console.log('🔗 Backend URL: http://localhost:5000/api/auth/login');
 
-      // Call ApiService to authenticate with Firebase backend
-      const response = await ApiService.login({ email, password });
+      // Simple login validation (you can replace this with your API call)
+      if (email && password) {
+        console.log('✅ Login successful');
+        
+        // Create user data object
+        const userData = {
+          email: email,
+          name: email.split('@')[0], // Use email prefix as name
+          userType: userType,
+          loginTime: new Date().toISOString(),
+        };
 
-      if (response.success) {
-        console.log('✅ Login successful with Firebase backend');
-        console.log('👤 User:', response.user.email);
-
-        // Call the onLogin prop to handle successful login (for navigation)
-        if (onLogin) {
-          await onLogin(email, password, navigation);
-        }
-
+        // Save user data using context
+        await login(userData);
+        
+        // Navigate to Home
+        navigation.replace('Home');
+        
         setLoginError(''); // Clear any previous error
       } else {
         console.log('❌ Login failed');
