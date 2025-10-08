@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, createContext, useContext } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Platform, View, Text, StyleSheet } from 'react-native';
@@ -120,6 +121,7 @@ const App = () => {
 
   return (
     <UserContext.Provider value={{ user, login, logout, updateUser }}>
+      <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Splash">
           <Stack.Screen key="splash" name="Splash" component={SplashScreen} />
@@ -140,6 +142,7 @@ const App = () => {
           <Stack.Screen key="dashboard" name="Dashboard" component={DashboardScreen} />
         </Stack.Navigator>
       </NavigationContainer>
+      </SafeAreaProvider>
     </UserContext.Provider>
   );
 };

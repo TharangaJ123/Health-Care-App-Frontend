@@ -8,8 +8,9 @@ import {
   ScrollView,
   Alert,
   Platform,
-  SafeAreaView,
 } from 'react-native';
+
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { saveMedication } from '../../utils/storage';
 import { theme } from '../../utils/theme';
