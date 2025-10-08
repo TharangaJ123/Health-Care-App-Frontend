@@ -390,7 +390,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
 
             {/* Community */}
-            <TouchableOpacity style={styles.quickActionButton} onPress={() => Alert.alert('Community', 'Coming soon') }>
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Community')}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#F59E0B'}]}>
                 <Feather name="users" size={24} color="#fff" />
               </View>
@@ -398,7 +398,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
 
             {/* Appointment */}
-            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Dashboard')}>
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('DoctorAppointment')}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#EC4899'}]}>
                 <Feather name="calendar" size={24} color="#fff" />
               </View>
