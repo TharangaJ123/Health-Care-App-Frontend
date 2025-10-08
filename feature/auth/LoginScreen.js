@@ -11,7 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useUser } from '../../App';
+import { useUser } from '../../context/UserContext';
 import { authStyles } from './styles/AuthStyles';
 import { validateField } from './validationUtils';
 
