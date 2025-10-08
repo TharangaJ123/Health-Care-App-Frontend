@@ -8,7 +8,8 @@ import * as Device from 'expo-device';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { requestNotificationPermissions, handleNotificationResponse, clearNonMedicationNotifications } from './services/NotificationService';
+import { requestNotificationPermissions, clearNonMedicationNotifications } from './services/NotificationService';
+import { handleNotificationResponse } from './utils/notifications';
 import { UserContext } from './context/UserContext';
 
 // Import screens
