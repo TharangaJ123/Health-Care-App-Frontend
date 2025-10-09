@@ -67,7 +67,7 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
   
   const goalTypes = [
     { id: 'physical', label: 'Physical', icon: 'fitness-outline', color: '#FF3B30' },
-    { id: 'mental', label: 'Mental', icon: 'brain-outline', color: '#5856D6' },
+    { id: 'mental', label: 'Mental', icon: 'happy-outline', color: '#5856D6' },
     { id: 'nutrition', label: 'Nutrition', icon: 'nutrition-outline', color: '#34C759' },
     { id: 'sleep', label: 'Sleep', icon: 'moon-outline', color: '#007AFF' },
     { id: 'social', label: 'Social', icon: 'people-outline', color: '#FF9500' },

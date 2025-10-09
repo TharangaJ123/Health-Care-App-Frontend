@@ -8,8 +8,8 @@ Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     const data = notification.request.content.data;
 
-    // Only show notifications for medication reminders
-    if (data && data.type === 'medication-reminder') {
+    // Show alerts for allowed reminder types
+    if (data && (data.type === 'medication-reminder' || data.type === 'goal-step-reminder')) {
       return {
         shouldShowAlert: true,
         shouldPlaySound: true,
@@ -28,10 +28,13 @@ Notifications.setNotificationHandler({
     const { notification } = response;
     const data = notification.request.content.data;
 
-    // Only handle medication reminder notifications
+    // Handle supported notification types
     if (data && data.type === 'medication-reminder') {
       console.log('Handling medication reminder notification response:', data);
       // The app will handle navigation based on the medicationId in the data
+    } else if (data && data.type === 'goal-step-reminder') {
+      console.log('Handling goal step reminder notification response:', data);
+      // Optionally navigate to goal/step view
     } else {
       console.log('Ignoring non-medication notification:', data?.type);
     }
@@ -190,5 +193,115 @@ export const clearNonMedicationNotifications = async () => {
   } catch (error) {
     console.warn('Error clearing non-medication notifications:', error.message);
     return 0;
+  }
+};
+
+// ------------------------------
+// Goal Step Reminder Scheduling
+// ------------------------------
+
+const parseTimeString = (timeStr) => {
+  // Returns { hour, minute } from formats like "07:00 AM" or "07:00"; defaults to 9:00
+  try {
+    if (!timeStr) return { hour: 9, minute: 0 };
+    let hours, minutes;
+    if (timeStr.includes('AM') || timeStr.includes('PM')) {
+      const [timePart, period] = timeStr.split(' ');
+      const [h, m] = timePart.split(':').map(Number);
+      hours = period === 'AM' ? (h === 12 ? 0 : h) : (h === 12 ? 12 : h + 12);
+      minutes = m;
+    } else {
+      [hours, minutes] = timeStr.split(':').map(Number);
+    }
+    if (Number.isFinite(hours) && Number.isFinite(minutes)) return { hour: hours, minute: minutes };
+    return { hour: 9, minute: 0 };
+  } catch {
+    return { hour: 9, minute: 0 };
+  }
+};
+
+const atDateWithTime = (isoDate, hour, minute) => {
+  // Returns a JS Date at local time (hour:minute) on isoDate (YYYY-MM-DD)
+  try {
+    const [y, m, d] = isoDate.split('-').map(Number);
+    return new Date(y, (m - 1), d, hour, minute, 0, 0);
+  } catch {
+    return null;
+  }
+};
+
+export const cancelGoalStepReminders = async (goalId) => {
+  try {
+    if (Platform.OS === 'web') {
+      console.log('Skipping goal-step reminder cancellation on web platform');
+      return;
+    }
+    const allNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    const notificationsToCancel = allNotifications.filter(
+      (n) => n.content?.data?.type === 'goal-step-reminder' && n.content?.data?.goalId === goalId
+    );
+    for (const n of notificationsToCancel) {
+      await Notifications.cancelScheduledNotificationAsync(n.identifier);
+    }
+    console.log(`Cancelled ${notificationsToCancel.length} goal-step reminders for goal ${goalId}`);
+  } catch (e) {
+    console.warn('Error cancelling goal-step reminders:', e?.message || String(e));
+  }
+};
+
+export const scheduleGoalStepReminders = async (goal) => {
+  try {
+    if (!goal?.id) return;
+    if (Platform.OS === 'web') {
+      console.log('Skipping goal-step reminder scheduling on web platform');
+      return;
+    }
+    // Cancel existing reminders for this goal first
+    await cancelGoalStepReminders(goal.id);
+
+    const { hour, minute } = parseTimeString(goal?.time);
+    const PRE_REMINDER_MINUTES = 15;
+
+    const subtractMinutes = (dateObj, minutes) => {
+      const ms = dateObj.getTime() - minutes * 60000;
+      return new Date(ms);
+    };
+
+    const steps = Array.isArray(goal.steps) ? goal.steps : [];
+    for (const s of steps) {
+      if (s.completed) continue; // Only schedule for incomplete steps
+      const dateIso = s.startDate || goal.date; // fallback to goal date if step missing startDate
+      if (!dateIso) continue;
+      const when = atDateWithTime(dateIso, hour, minute);
+      if (!when || when.getTime() <= Date.now()) continue; // Do not schedule in the past
+
+      const baseId = `goal-${goal.id}-step-${s.id}`;
+      // On-time reminder
+      await schedulePushNotification(
+        `${baseId}-ontime`,
+        {
+          title: '🏁 Start your step',
+          body: s.title ? `${s.title}` : 'A goal step is scheduled to start',
+          data: { type: 'goal-step-reminder', goalId: goal.id, stepId: s.id },
+        },
+        when
+      );
+
+      // Pre-reminder
+      const pre = subtractMinutes(when, PRE_REMINDER_MINUTES);
+      if (pre.getTime() > Date.now()) {
+        await schedulePushNotification(
+          `${baseId}-pre${PRE_REMINDER_MINUTES}`,
+          {
+            title: '⏰ Upcoming step',
+            body: s.title ? `${s.title} in ${PRE_REMINDER_MINUTES} minutes` : `A step starts in ${PRE_REMINDER_MINUTES} minutes`,
+            data: { type: 'goal-step-reminder', goalId: goal.id, stepId: s.id },
+          },
+          pre
+        );
+      }
+    }
+  } catch (e) {
+    console.warn('Error scheduling goal-step reminders:', e?.message || String(e));
   }
 };
