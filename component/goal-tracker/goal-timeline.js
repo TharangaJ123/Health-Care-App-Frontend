@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Utility formatters
 const fmt = (iso) => {
   if (!iso) return '';
   try {
@@ -23,11 +22,9 @@ const daysBetween = (a, b) => {
   }
 };
 
-// Vertical timeline per step with date badges and connector lines
 const GoalTimeline = ({ steps = [], startDate, onToggleStep }) => {
   const anySchedule = Array.isArray(steps) && steps.some(s => s.startDate || s.dueDate || typeof s.dayOffset === 'number');
   if (!anySchedule) {
-    // Graceful fallback: show compact ordered list without dates
     return (
       <View style={styles.fallback}>
         <Text style={styles.fallbackTitle}>Roadmap</Text>
@@ -46,9 +43,8 @@ const GoalTimeline = ({ steps = [], startDate, onToggleStep }) => {
   const base = startDate || (steps[0] && steps[0].startDate) || new Date().toISOString().split('T')[0];
 
   return (
-    <View style={styles.wrapper}>
-      <Text style={styles.title}>Goal Roadmap</Text>
-      <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+    <View>
+      <ScrollView showsVerticalScrollIndicator={true}>
         {steps
           .slice()
           .sort((a,b)=>(a.order||0)-(b.order||0))
@@ -59,11 +55,8 @@ const GoalTimeline = ({ steps = [], startDate, onToggleStep }) => {
             const locked = arr.slice(0, idx).some(p => !p.completed);
             return (
               <View key={String(s.id || idx)} style={styles.row}>
-                {/* LEFT: timeline rail */}
                 <View style={styles.railCol}>
-                  {/* connector above */}
                   {idx !== 0 ? <View style={styles.connector} /> : <View style={{ height: 10 }} />}
-                  {/* bullet */}
                   <TouchableOpacity
                     activeOpacity={0.8}
                     disabled={locked}
@@ -72,11 +65,9 @@ const GoalTimeline = ({ steps = [], startDate, onToggleStep }) => {
                   >
                     <Ionicons name={s.completed ? 'checkmark' : 'ellipse-outline'} size={12} color={s.completed ? '#fff' : locked ? '#C7CAD1' : '#6B7280'} />
                   </TouchableOpacity>
-                  {/* connector below */}
                   {idx !== arr.length - 1 ? <View style={styles.connector} /> : <View style={{ height: 10 }} />}
                 </View>
 
-                {/* RIGHT: card */}
                 <TouchableOpacity
                   activeOpacity={0.9}
                   disabled={locked}
@@ -107,16 +98,6 @@ const GoalTimeline = ({ steps = [], startDate, onToggleStep }) => {
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-  },
   title: {
     fontSize: 18,
     fontWeight: '700',

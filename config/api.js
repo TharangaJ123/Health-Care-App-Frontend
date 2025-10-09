@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Use device-friendly localhost by default
 const DEFAULT_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
@@ -13,6 +14,14 @@ export async function apiFetch(path, options = {}) {
   if (!isFormData) {
     headers['Content-Type'] = headers['Content-Type'] || 'application/json';
   }
+
+  // Attach bearer token if available
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    if (token && !headers.Authorization) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {}
 
   // Auto stringify body if it's a plain object and content-type is json
   let body = options.body;

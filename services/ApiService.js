@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const DEFAULT_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const API_BASE_URL = `http://${DEFAULT_HOST}:5000/api`;
 
 class ApiService {
   // Email verification
@@ -121,6 +123,8 @@ class ApiService {
         // Store user data for immediate use
         if (response.user) {
           await AsyncStorage.setItem('userData', JSON.stringify(response.user));
+          // Also store under 'user' so UserContext can hydrate and goal API gets a userId
+          await AsyncStorage.setItem('user', JSON.stringify(response.user));
           console.log('✅ User data stored in AsyncStorage');
         }
 

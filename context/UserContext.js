@@ -36,6 +36,8 @@ export const UserProvider = ({ children }) => {
   const login = async (userData) => {
     try {
       await AsyncStorage.setItem('user', JSON.stringify(userData));
+      // Update in-memory state so consumers see the user immediately
+      setUser(userData);
     } catch (error) {
       console.error('Error saving user data:', error);
     }
@@ -45,10 +47,8 @@ export const UserProvider = ({ children }) => {
     try {
       // Use the centralized logout from ApiService to ensure all data is cleared
       await ApiService.logout();
-
       // Update UserContext state
       setUser(null);
-
       console.log('✅ UserContext logout completed successfully');
     } catch (error) {
       console.error('Error during UserContext logout:', error);
@@ -62,16 +62,17 @@ export const UserProvider = ({ children }) => {
     try {
       const newUserData = { ...user, ...updatedUserData };
       await AsyncStorage.setItem('user', JSON.stringify(newUserData));
+      // Keep context state in sync
+      setUser(newUserData);
     } catch (error) {
       console.error('Error updating user data:', error);
     }
   };
-
   const value = { user, login, logout, updateUser, isLoading };
 
   return (
     <UserContext.Provider value={value}>
-      {children}
+      {isLoading ? null : children}
     </UserContext.Provider>
   );
 };

@@ -356,6 +356,7 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
           </View>
           <GoalTimeline steps={Array.isArray(currentGoal.steps) ? currentGoal.steps : []} startDate={currentGoal.date} onToggleStep={toggleStep} />
         </View>
+        
         {/* Insights (visible when completed) */}
         {currentGoal.completed ? (
           <View style={styles.section}>

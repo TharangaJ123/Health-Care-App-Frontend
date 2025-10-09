@@ -78,6 +78,22 @@ const MainNavigator = () => {
     return !hiddenRoutes.has(currentRouteName);
   }, [currentRouteName]);
 
+  // Handle successful login: reset stack and go to Home
+  const onLogin = async (_email, _password, navigation) => {
+    try {
+      if (navigation?.reset) {
+        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+      } else if (navRef?.resetRoot) {
+        navRef.resetRoot({ index: 0, routes: [{ name: 'Home' }] });
+      } else {
+        navRef.navigate('Home');
+      }
+    } catch (e) {
+      // Fallback to simple navigate if reset fails
+      try { navRef.navigate('Home'); } catch {}
+    }
+  };
+
   return (
     <View style={styles.root}>
       <NavigationContainer
@@ -95,7 +111,10 @@ const MainNavigator = () => {
           {/* Entry & Auth */}
           <Stack.Screen name="Splash" component={SplashScreen}  />
           <Stack.Screen name="Onboarding" component={OnboardingScreen}  />
-          <Stack.Screen name="Login" component={LoginScreen}  />
+           <Stack.Screen name="Login">
+            {({ navigation }) => <LoginScreen navigation={navigation} onLogin={(email, password) => onLogin(email, password, navigation)} />}
+          </Stack.Screen>
+ 
           <Stack.Screen name="Signup" component={SignupScreen}  />
 
           {/* Main container with bottom tabs-like content */}

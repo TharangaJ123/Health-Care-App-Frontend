@@ -5,15 +5,16 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
 import { apiFetch } from '../../config/api';
 import { useUser } from '../../context/UserContext';
+import AppHeader from '../common/AppHeader';
 
 const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refreshSignal }) => {
   const { user } = useUser();
@@ -40,7 +41,6 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
     type: g.type || 'other',
     date: g.date || g.startDate || new Date().toISOString().split('T')[0],
     completed: Boolean(g.completed || false),
-    time: g.time || '—',
     priority: g.priority || 'medium',
     reminders: Array.isArray(g.reminders) ? g.reminders : [],
     notificationIds: Array.isArray(g.notificationIds) ? g.notificationIds : [],
@@ -49,21 +49,25 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
   const loadGoals = async () => {
     try {
       if (!user) {
+        console.warn('[Goals] No user in context; skipping fetch');
         setGoals([]);
         updateMarkedDates([]);
         return;
       }
-      const q = `?userId=${encodeURIComponent(user.uid || user.email)}`;
-      const data = await apiFetch(`/api/goals${q}`);
+      const userId = user.uid || user.email || user.id;
+      const q = `?userId=${encodeURIComponent(userId)}`;
+      const path = `/api/goals${q}`;
+      const data = await apiFetch(path);
+      console.log('[Goals] Fetched data:', data);
       const mapped = Array.isArray(data) ? data.map((g, i) => normalizeGoal(g, i)) : [];
       setGoals(mapped);
       updateMarkedDates(mapped);
     } catch (e) {
+      console.error('[Goals] Fetch failed:', e?.message || e);
       setGoals([]);
       updateMarkedDates([]);
     }
   };
-
   const openActions = (goal) => {
     setSelectedGoal(goal);
     setActionsVisible(true);
@@ -119,8 +123,8 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
   const getTypeIcon = (type) => {
     switch (type) {
       case 'physical': return 'fitness-outline';
-      case 'mental': return 'brain-outline';
-      case 'nutrition': return 'nutrition-outline';
+      case 'mental': return 'happy-outline';
+      case 'nutrition': return 'restaurant-outline';
       default: return 'flag-outline';
     }
   };
@@ -272,15 +276,13 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
       </Modal>
       
       {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>AI TrackIt</Text>
-          <Text style={styles.headerSubtitle}>Dream • Plan • Conquer</Text>
-        </View>
-        <TouchableOpacity style={styles.headerButton} activeOpacity={0.8} onPress={() => onNavigateToAddGoal()}>
-          <Ionicons name="add-circle-outline" size={32} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      <AppHeader
+        title="AI TrackIt"
+        subtitle="Dream • Plan • Conquer"
+        rightIconName="add-circle-outline"
+        onRightPress={() => onNavigateToAddGoal()}
+        rightIconColor="#fff"
+      />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Calendar Section */}
@@ -354,7 +356,7 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
             <FlatList
               data={selectedDateGoals}
               renderItem={renderGoalItem}
-              keyExtractor={item => item.id}
+              keyExtractor={(item) => item.id}
               scrollEnabled={false}
               contentContainerStyle={styles.goalsList}
             />
@@ -363,15 +365,11 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
               <Ionicons name="calendar-outline" size={80} color="#E5E7EB" />
               <Text style={styles.emptyStateTitle}>No goals for this date</Text>
               <Text style={styles.emptyStateText}>
-                {selectedDate === new Date().toISOString().split('T')[0] 
-                  ? "Add some goals for today to get started!" 
-                  : "No goals scheduled for this date."
-                }
+                {selectedDate === new Date().toISOString().split('T')[0]
+                  ? 'Add some goals for today to get started!'
+                  : 'No goals scheduled for this date.'}
               </Text>
-              <TouchableOpacity 
-                style={styles.addButton}
-                onPress={onNavigateToAddGoal}
-              >
+              <TouchableOpacity style={styles.addButton} onPress={onNavigateToAddGoal}>
                 <Ionicons name="add" size={20} color="#fff" />
                 <Text style={styles.addButtonText}>Add Goal</Text>
               </TouchableOpacity>

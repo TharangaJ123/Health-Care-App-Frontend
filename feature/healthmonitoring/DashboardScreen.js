@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useHealthData } from '../../context/HealthDataContext';
+import AppHeader from '../../component/common/AppHeader';
 
 const DashboardScreen = ({ navigation }) => {
   const { latestHealthData } = useHealthData();
@@ -180,16 +181,17 @@ const DashboardScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <AppHeader
+        title="Health Monitoring"
+        subtitle="Track your health metrics"
+      />
       <View style={styles.content}>
         <ScrollView 
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>Health Monitoring</Text>
-            <Text style={styles.subtitle}>Track your health metrics</Text>
-          </View>
+          
 
           {/* Journey Card */}
           <View style={styles.journeyCard}>

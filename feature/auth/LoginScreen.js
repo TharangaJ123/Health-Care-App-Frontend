@@ -12,10 +12,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ApiService from '../../services/ApiService';
+import { useUser } from '../../context/UserContext';
 import { authStyles } from './styles/AuthStyles';
 import { validateField } from './validationUtils';
 
 const LoginScreen = ({ navigation, onLogin }) => {
+  const { login: setUserContext } = useUser();
   const [userType, setUserType] = useState('patient');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -98,6 +100,13 @@ const LoginScreen = ({ navigation, onLogin }) => {
       if (response.success) {
         console.log('✅ Login successful with Firebase backend');
         console.log('👤 User:', response.user.email);
+
+        // Hydrate UserContext so downstream screens can access user immediately
+        try {
+          if (response.user && setUserContext) {
+            await setUserContext(response.user);
+          }
+        } catch {}
 
         // Call the onLogin prop to handle successful login (for navigation)
         if (onLogin) {

@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { apiFetch } from '../../config/api';
 import { useUser } from '../../context/UserContext';
 import CreateBlogScreen from './CreateBlogScreen';
+import AppHeader from '../common/AppHeader';
 
 const BlogScreen = ({ onNavigateToBlogDetail }) => {
   const { user } = useUser();
@@ -32,18 +33,17 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
   const [menuPost, setMenuPost] = useState(null);
 
   const categories = [
-    { name: 'All', color: '#666', icon: 'apps' },
-    { name: 'Daily Med Tips', color: '#2196F3', icon: 'bulb' },
-    { name: 'Side Effects Stories', color: '#FF9800', icon: 'warning' },
-    { name: 'Success Journeys', color: '#4CAF50', icon: 'trophy' },
-    { name: 'Ask the Community', color: '#9C27B0', icon: 'chatbubbles' },
-    { name: 'Professional Advice', color: '#F44336', icon: 'medical' },
+    { name: 'All', color: '#666', icon: 'apps-outline' },
+    { name: 'Daily Med Tips', color: '#2196F3', icon: 'bulb-outline' },
+    { name: 'Side Effects Stories', color: '#FF9800', icon: 'warning-outline' },
+    { name: 'Success Journeys', color: '#4CAF50', icon: 'trophy-outline' },
+    { name: 'Ask the Community', color: '#9C27B0', icon: 'chatbubbles-outline' },
+    { name: 'Professional Advice', color: '#F44336', icon: 'medkit-outline' },
   ];
 
   useEffect(() => {
     loadPosts();
   }, []);
-
   const loadPosts = async () => {
     setRefreshing(true);
     try {
@@ -321,15 +321,13 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
       {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>MedTalks</Text>
-          <Text style={styles.headerSubtitle}>Share • Learn • Heal Together</Text>
-        </View>
-        <TouchableOpacity style={styles.headerButton} activeOpacity={0.8} onPress={() => { setEditingPost(null); setShowCreate(true); }}>
-          <Ionicons name="add-circle-outline" size={32} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      <AppHeader
+        title="MedTalks"
+        subtitle="Share • Learn • Heal Together"
+        rightIconName="add-circle-outline"
+        onRightPress={() => { setEditingPost(null); setShowCreate(true); }}
+        rightIconColor="#fff"
+      />
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
