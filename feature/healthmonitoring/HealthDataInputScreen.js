@@ -36,6 +36,8 @@ const HealthDataInputScreen = ({ navigation }) => {
   });
   
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState({ title: '', message: '' });
   const [validationMessages, setValidationMessages] = useState({});
 
   const validateInput = (name, value) => {
@@ -81,11 +83,14 @@ const HealthDataInputScreen = ({ navigation }) => {
   };
 
   const handleInputChange = (name, value) => {
-    const validationMessage = validateInput(name, value);
-    setValidationMessages({
-      ...validationMessages,
-      [name]: validationMessage
-    });
+    // Skip validation for notes field as it's text-based
+    if (name !== 'notes') {
+      const validationMessage = validateInput(name, value);
+      setValidationMessages({
+        ...validationMessages,
+        [name]: validationMessage
+      });
+    }
     
     setFormData({
       ...formData,
@@ -94,15 +99,26 @@ const HealthDataInputScreen = ({ navigation }) => {
   };
 
   const showAlert = (title, message) => {
-    Alert.alert(
-      title,
-      message,
-      [{ text: 'OK' }],
-      { cancelable: false }
-    );
+    setErrorMessage({ title, message });
+    setShowErrorModal(true);
   };
 
   const handleSubmit = () => {
+    // Check if at least one health metric is filled
+    const hasAnyData = formData.heartRate || formData.systolicBP || formData.diastolicBP || 
+                       formData.spo2 || formData.bloodGlucose;
+    
+    if (!hasAnyData) {
+      showAlert('Missing Data', 'Please enter at least one health metric before saving.');
+      return;
+    }
+
+    // Check for incomplete blood pressure data
+    if ((formData.systolicBP && !formData.diastolicBP) || (!formData.systolicBP && formData.diastolicBP)) {
+      showAlert('Incomplete Data', 'Please enter both Systolic and Diastolic blood pressure values.');
+      return;
+    }
+
     // Check for any validation errors
     const hasErrors = Object.values(validationMessages).some(msg => msg !== '');
     if (hasErrors) {
@@ -337,6 +353,32 @@ const HealthDataInputScreen = ({ navigation }) => {
               onPress={() => setShowSuccessModal(false)}
             >
               <Text style={healthStyles.buttonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Error/Validation Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showErrorModal}
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={healthStyles.modalOverlay}>
+          <View style={healthStyles.modalContent}>
+            <View style={[healthStyles.modalIcon, { backgroundColor: '#e74c3c' }]}>
+              <Ionicons name="alert-circle" size={40} color="#fff" />
+            </View>
+            <Text style={healthStyles.modalTitle}>{errorMessage.title}</Text>
+            <Text style={healthStyles.modalText}>
+              {errorMessage.message}
+            </Text>
+            <TouchableOpacity
+              style={[healthStyles.button, { width: '100%', backgroundColor: '#e74c3c' }]}
+              onPress={() => setShowErrorModal(false)}
+            >
+              <Text style={healthStyles.buttonText}>OK</Text>
             </TouchableOpacity>
           </View>
         </View>

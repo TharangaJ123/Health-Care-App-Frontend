@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+
 import { 
   View, 
   Text, 
   StyleSheet, 
+  SafeAreaView, 
   ScrollView, 
   TouchableOpacity, 
   Image, 
@@ -10,8 +12,9 @@ import {
   StatusBar,
   Animated
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
+import { useHealthData } from '../../context/HealthDataContext';
 
 const { width } = Dimensions.get('window');
 
@@ -24,11 +27,13 @@ const generateChartData = (count, min, max, variance = 5) => {
 };
 
 const MonitorHealthScreen = ({ navigation }) => {
+  const { latestHealthData, healthHistory } = useHealthData();
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState('00:00');
   const [heartRate, setHeartRate] = useState(72);
   const [bloodPressure, setBloodPressure] = useState({ systolic: 120, diastolic: 80 });
   const [oxygenLevel, setOxygenLevel] = useState(98);
+const [bloodGlucose,setBloodGlucose]=useState(90)
   const [respiratoryRate, setRespiratoryRate] = useState(16);
   const [ecgStatus, setEcgStatus] = useState('NORMAL');
   const [ecgStatusColor, setEcgStatusColor] = useState('#00E096');
@@ -119,48 +124,117 @@ const MonitorHealthScreen = ({ navigation }) => {
   const [oxygenData, setOxygenData] = useState(() => generateDataForFilter('day', 95, 100));
   const [respiratoryData, setRespiratoryData] = useState(() => generateDataForFilter('day', 12, 20));
   
-  // Update data when time filter changes
+  // Update data when time filter changes or health history updates
   useEffect(() => {
-    setHeartRateData(generateDataForFilter(timeFilter, 65, 85));
-    setHeartRateVariability(generateDataForFilter(timeFilter, 20, 50));
-    setBloodPressureData({
-      systolic: generateDataForFilter(timeFilter, 110, 130),
-      diastolic: generateDataForFilter(timeFilter, 70, 90),
-      map: generateDataForFilter(timeFilter, 80, 100)
-    });
-    setOxygenData(generateDataForFilter(timeFilter, 95, 100));
-    setRespiratoryData(generateDataForFilter(timeFilter, 12, 20));
-  }, [timeFilter]);
+    if (healthHistory && healthHistory.length > 0) {
+      // Use actual health data from history
+      const count = getDataPointCount(timeFilter);
+      const recentData = healthHistory.slice(0, count).reverse();
+      
+      // Extract heart rate data
+      const hrData = recentData.map(record => record.heartRate || 72);
+      if (hrData.length < count) {
+        // Fill with default values if not enough data
+        while (hrData.length < count) hrData.push(72);
+      }
+      setHeartRateData(hrData);
+      
+      // Extract blood pressure data
+      const systolicData = recentData.map(record => record.systolicBP || 120);
+      const diastolicData = recentData.map(record => record.diastolicBP || 80);
+      if (systolicData.length < count) {
+        while (systolicData.length < count) systolicData.push(120);
+        while (diastolicData.length < count) diastolicData.push(80);
+      }
+      setBloodPressureData({
+        systolic: systolicData,
+        diastolic: diastolicData,
+        map: systolicData.map((s, i) => Math.round((s + 2 * diastolicData[i]) / 3))
+      });
+      
+      // Extract oxygen data
+      const oxyData = recentData.map(record => record.spo2 || 98);
+      if (oxyData.length < count) {
+        while (oxyData.length < count) oxyData.push(98);
+      }
+      setOxygenData(oxyData);
+      
+      // Update respiratory data (keep generated for now as it's not in health records)
+      setRespiratoryData(generateDataForFilter(timeFilter, 12, 20));
+      setHeartRateVariability(generateDataForFilter(timeFilter, 20, 50));
+    } else {
+      // Use generated data if no health history
+      setHeartRateData(generateDataForFilter(timeFilter, 65, 85));
+      setHeartRateVariability(generateDataForFilter(timeFilter, 20, 50));
+      setBloodPressureData({
+        systolic: generateDataForFilter(timeFilter, 110, 130),
+        diastolic: generateDataForFilter(timeFilter, 70, 90),
+        map: generateDataForFilter(timeFilter, 80, 100)
+      });
+      setOxygenData(generateDataForFilter(timeFilter, 95, 100));
+      setRespiratoryData(generateDataForFilter(timeFilter, 12, 20));
+    }
+  }, [timeFilter, healthHistory]);
   
-  // Calculate heart rate zones
-  const maxHeartRate = 220 - 30; // Assuming age 30 for demo
-  const heartRateZones = {
-    zone1: Math.round(maxHeartRate * 0.5),
-    zone2: Math.round(maxHeartRate * 0.6),
-    zone3: Math.round(maxHeartRate * 0.7),
-    zone4: Math.round(maxHeartRate * 0.8),
-    zone5: Math.round(maxHeartRate * 0.9)
+  // Calculate heart rate status
+  const getHeartRateStatus = (hr) => {
+    if (hr < 60) return { status: 'Low', color: '#FF3D71' };
+    if (hr > 100) return { status: 'High', color: '#FF3D71' };
+    if (hr > 90) return { status: 'Medium', color: '#FFAA00' };
+    return { status: 'Normal', color: '#00E096' };
   };
   
-  // Calculate current heart rate zone
-  const getHeartRateZone = (hr) => {
-    if (hr < heartRateZones.zone1) return { zone: 'Rest', color: '#8F9BB3' };
-    if (hr < heartRateZones.zone2) return { zone: 'Warm Up', color: '#00E5FF' };
-    if (hr < heartRateZones.zone3) return { zone: 'Fat Burn', color: '#00E096' };
-    if (hr < heartRateZones.zone4) return { zone: 'Cardio', color: '#FFAA00' };
-    return { zone: 'Peak', color: '#FF3D71' };
-  };
-  
-  const currentHRZone = getHeartRateZone(heartRate);
+  const heartRateStatus = getHeartRateStatus(heartRate);
   
   // Calculate SpO2 status
   const getOxygenStatus = (spo2) => {
-    if (spo2 >= 95) return { status: 'Excellent', color: '#00E096' };
-    if (spo2 >= 90) return { status: 'Normal', color: '#0095FF' };
-    return { status: 'Low', color: '#FF3D71' };
+    if (spo2 < 90) return { status: 'Low', color: '#FF3D71' };
+    if (spo2 < 95) return { status: 'Medium', color: '#FFAA00' };
+    return { status: 'Normal', color: '#00E096' };
   };
   
   const oxygenStatus = getOxygenStatus(oxygenLevel);
+  
+  // Calculate blood pressure status
+  const getBloodPressureStatus = (systolic, diastolic) => {
+    if (systolic < 90 || diastolic < 60) return { status: 'Low', color: '#FF3D71' };
+    if (systolic > 140 || diastolic > 90) return { status: 'High', color: '#FF3D71' };
+    if (systolic > 120 || diastolic > 80) return { status: 'Medium', color: '#FFAA00' };
+    return { status: 'Normal', color: '#00E096' };
+  };
+  
+  const bloodPressureStatus = getBloodPressureStatus(bloodPressure.systolic, bloodPressure.diastolic);
+  
+  // Calculate blood glucose status
+  const getBloodGlucoseStatus = (glucose) => {
+    if (glucose < 70) return { status: 'Low', color: '#FF3D71' };
+    if (glucose > 140) return { status: 'High', color: '#FF3D71' };
+    if (glucose > 100) return { status: 'Medium', color: '#FFAA00' };
+    return { status: 'Normal', color: '#00E096' };
+  };
+  
+  const bloodGlucoseStatus = getBloodGlucoseStatus(bloodGlucose);
+  
+  // Update current values from latest health data
+  useEffect(() => {
+    if (latestHealthData) {
+      if (latestHealthData.heartRate) {
+        setHeartRate(latestHealthData.heartRate.value);
+      }
+      if (latestHealthData.bloodPressure && latestHealthData.bloodPressure.details) {
+        setBloodPressure({
+          systolic: latestHealthData.bloodPressure.details.systolic.value,
+          diastolic: latestHealthData.bloodPressure.details.diastolic.value
+        });
+      }
+      if (latestHealthData.oxygenLevel) {
+        setOxygenLevel(latestHealthData.oxygenLevel.value);
+      }
+      if (latestHealthData.bloodGlucose) {
+        setBloodGlucose(latestHealthData.bloodGlucose.value);
+      }
+    }
+  }, [latestHealthData]);
   
   // Time labels for x-axis
   const timeLabels = Array(12).fill(0).map((_, i) => {
@@ -204,6 +278,122 @@ const MonitorHealthScreen = ({ navigation }) => {
   // Oxygen chart config
   const oxyYAxis = getYAxisLabels(90, 100);
   const oxyPoints = getLinePoints(oxygenData, width - 40, 100, 90, 10);
+
+const chartConfig = {
+  backgroundColor: "#fff",
+  backgroundGradientFrom: "#f7f9fc",
+  backgroundGradientTo: "#f7f9fc",
+  decimalPlaces: 0,
+  color: (opacity = 1) => `rgba(0, 122, 255, ${opacity})` ,
+  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})` ,
+  style: { borderRadius: 16 },
+  propsForDots: { r: "5", strokeWidth: "2", stroke: "#007AFF" },
+};
+
+// Generate chart data from health history or use defaults
+const generateChartDataFromHistory = () => {
+  // Generate labels based on time filter
+  const getChartLabels = () => {
+    if (timeFilter === 'day') {
+      // Hourly labels for a day (every 4 hours)
+      return ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'];
+    } else if (timeFilter === 'week') {
+      // Daily labels for a week
+      return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    } else {
+      // Weekly labels for a month
+      return ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    }
+  };
+  
+  const labels = getChartLabels();
+  const dataPointCount = labels.length;
+  
+  if (healthHistory && healthHistory.length > 0) {
+    const recentData = healthHistory.slice(0, dataPointCount).reverse();
+    
+    // Ensure we have correct number of data points
+    const systolicData = [];
+    const diastolicData = [];
+    const oxygenData = [];
+    const glucoseData = [];
+    
+    for (let i = 0; i < dataPointCount; i++) {
+      if (recentData[i]) {
+        systolicData.push(recentData[i].systolicBP || 120);
+        diastolicData.push(recentData[i].diastolicBP || 80);
+        oxygenData.push(recentData[i].spo2 || 98);
+        glucoseData.push(recentData[i].bloodGlucose || 95);
+      } else {
+        // Fill with default values if not enough data
+        systolicData.push(120);
+        diastolicData.push(80);
+        oxygenData.push(98);
+        glucoseData.push(95);
+      }
+    }
+    
+    return {
+      bloodPressure: {
+        labels,
+        datasets: [
+          {
+            data: systolicData,
+            color: () => `rgba(255, 0, 0, 1)`,
+            strokeWidth: 2,
+          },
+          {
+            data: diastolicData,
+            color: () => `rgba(0, 0, 255, 1)`,
+            strokeWidth: 2,
+          },
+        ],
+        legend: ["Systolic", "Diastolic"],
+      },
+      oxygen: {
+        labels,
+        datasets: [{ data: oxygenData }],
+      },
+      glucose: {
+        labels,
+        datasets: [{ data: glucoseData }],
+      },
+    };
+  }
+  
+  // Default data if no health history
+  return {
+    bloodPressure: {
+      labels,
+      datasets: [
+        {
+          data: [120, 125, 118, 130, 128, 122, 126],
+          color: () => `rgba(255, 0, 0, 1)`,
+          strokeWidth: 2,
+        },
+        {
+          data: [80, 82, 78, 85, 83, 81, 84],
+          color: () => `rgba(0, 0, 255, 1)`,
+          strokeWidth: 2,
+        },
+      ],
+      legend: ["Systolic", "Diastolic"],
+    },
+    oxygen: {
+      labels,
+      datasets: [{ data: [98, 97, 99, 96, 98, 97, 98] }],
+    },
+    glucose: {
+      labels,
+      datasets: [{ data: [95, 100, 98, 105, 102, 92, 99] }],
+    },
+  };
+};
+
+const chartData = generateChartDataFromHistory();
+const bloodPressureChartData = chartData.bloodPressure;
+const oxygenChartData = chartData.oxygen;
+const glucoseChartData = chartData.glucose;
 
   // Toggle monitoring
   const toggleMonitoring = () => {
@@ -277,11 +467,17 @@ const MonitorHealthScreen = ({ navigation }) => {
           return Math.max(85, Math.min(100, prev + variation));
         });
         
-        // Update respiratory rate (slightly correlated with heart rate)
-        setRespiratoryRate(prev => {
-          const baseRate = 12 + (heartRate - 60) * 0.1; // Base rate increases with HR
-          const variation = (Math.random() * 2 - 1);
-          return Math.max(8, Math.min(30, baseRate + variation));
+        // Update blood glucose with realistic variations
+        setBloodGlucose(prev => {
+          // Blood glucose can vary based on meals, exercise, etc.
+          // 10% chance of significant change (like after a meal)
+          if (Math.random() > 0.9) {
+            const change = (Math.random() * 20 - 10); // -10 to +10 change
+            return Math.max(70, Math.min(140, prev + change));
+          }
+          // Otherwise small variations
+          const variation = (Math.random() * 2 - 1); // -1 to +1
+          return Math.max(70, Math.min(140, prev + variation));
         });
         
       }, 3000); // Update every 3 seconds for more responsive feel
@@ -441,17 +637,8 @@ const MonitorHealthScreen = ({ navigation }) => {
             <Text style={styles.headerTitle}>Health Monitor</Text>
             <Text style={styles.headerSubtitle}>Real Time Monitoring</Text>
           </View>
-          <View style={styles.headerRight}>
-            <TouchableOpacity>
-              <Ionicons name="ellipsis-vertical" size={20} color="#8F9BB3" />
-            </TouchableOpacity>
-          </View>
         </View>
         <View style={styles.timerContainer}>
-          <View style={styles.timeContainer}>
-            <Ionicons name="time-outline" size={16} color="#8F9BB3" />
-            <Text style={styles.timerText}>{timeElapsed}</Text>
-          </View>
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Ionicons name="pulse" size={14} color="#FF3D71" />
@@ -520,52 +707,66 @@ const MonitorHealthScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
         
-        {/* ECG Graph */}
-        <View style={styles.section}>
+
+      {/* ECG Graph */}
+      <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>ECG</Text>
-            <View style={styles.sectionActions}>
-              <TouchableOpacity style={styles.sectionActionButton}>
-                <Ionicons name="expand" size={18} color="#8F9BB3" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.sectionActionButton}>
-                <Ionicons name="ellipsis-horizontal" size={18} color="#8F9BB3" />
-              </TouchableOpacity>
-            </View>
+          <Text style={styles.chartTitle}>❤️ Heart Rate (BPM)</Text>
           </View>
           
           <View style={styles.ecgGraph}>
-            <svg width="100%" height="100%" viewBox={`0 0 ${width} 120`}>
-              {/* Grid lines */}
-              <defs>
-                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#2D2D2D" strokeWidth="1" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="#1E1E1E" />
-              <rect width="100%" height="100%" fill="url(#grid)" />
-              
-              {/* ECG Line */}
-              <path 
-                d={getLinePoints(ecgData, width, 100, 0, 40)} 
-                fill="none" 
-                stroke="#00E5FF" 
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              
-              {/* Red line at the end */}
-              <line 
-                x1={width-40} 
-                y1="0" 
-                x2={width-40} 
-                y2="120" 
-                stroke="#FF3D71" 
-                strokeWidth="2"
-                strokeDasharray="4 2"
-              />
-            </svg>
+            <View style={styles.chartWrapper}>
+              {/* Y-axis labels */}
+              <View style={styles.yAxis}>
+                <Text style={styles.yAxisLabel}>150</Text>
+                <Text style={styles.yAxisLabel}>125</Text>
+                <Text style={styles.yAxisLabel}>100</Text>
+                <Text style={styles.yAxisLabel}>75</Text>
+                <Text style={styles.yAxisLabel}>50</Text>
+              </View>
+
+              {/* Chart area */}
+              <View style={styles.chart}>
+                <svg width="100%" height="100%" viewBox={`0 0 ${width - 80} 120`}>
+                  {/* Grid lines */}
+                  <defs>
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e0e4ec" strokeWidth="1" />
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="#f8f9fb" />
+                  <rect width="100%" height="100%" fill="url(#grid)" />
+
+                  {/* ECG Line */}
+                  <path
+                    d={getLinePoints(ecgData, width - 80, 100, 0, 40)}
+                    fill="none"
+                    stroke="#FF3D71"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  {/* Red line at the end */}
+                  <line
+                    x1={(width - 80) - 40}
+                    y1="0"
+                    x2={(width - 80) - 40}
+                    y2="120"
+                    stroke="#FF3D71"
+                    strokeWidth="2"
+                    strokeDasharray="4 2"
+                  />
+                </svg>
+
+                {/* X-axis labels */}
+                <View style={styles.xAxis}>
+                  {getTimeLabels(timeFilter).map((label, index) => (
+                    <Text key={index} style={styles.xAxisLabel}>{label}</Text>
+                  ))}
+                </View>
+              </View>
+            </View>
           </View>
           
           <View style={styles.ecgInfo}>
@@ -575,50 +776,116 @@ const MonitorHealthScreen = ({ navigation }) => {
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>STATUS</Text>
-              <View style={styles.statusBadge}>
-                <View style={styles.statusDot} />
-                <Text style={styles.statusText}>NORMAL RHYTHM</Text>
+              <View style={[styles.statusBadge, { backgroundColor: `${heartRateStatus.color}20` }]}>
+                <View style={[styles.statusDot, { backgroundColor: heartRateStatus.color }]} />
+                <Text style={[styles.statusText, { color: heartRateStatus.color }]}>{heartRateStatus.status.toUpperCase()}</Text>
               </View>
             </View>
           </View>
         </View>
-        
 
-       
-        
-        {/* Controls */}
-        <View style={styles.controls}>
-          <TouchableOpacity 
-            style={[styles.controlButton, styles.primaryButton]}
-            onPress={toggleMonitoring}
-          >
-            <Ionicons 
-              name={isMonitoring ? 'pause' : 'play'} 
-              size={24} 
-              color="#FFFFFF" 
-            />
-            <Text style={styles.controlButtonText}>
-              {isMonitoring ? 'PAUSE MONITORING' : 'START MONITORING'}
-            </Text>
-          </TouchableOpacity>
-          
-          <View style={styles.secondaryButtons}>
-            <TouchableOpacity style={styles.secondaryButton}>
-              <Ionicons name="stop" size={20} color="#8F9BB3" />
-              <Text style={styles.secondaryButtonText}>STOP</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.secondaryButton}>
-              <Ionicons name="refresh" size={20} color="#8F9BB3" />
-              <Text style={styles.secondaryButtonText}>RESET</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.secondaryButton}>
-              <Ionicons name="share-social" size={20} color="#8F9BB3" />
-              <Text style={styles.secondaryButtonText}>SHARE</Text>
-            </TouchableOpacity>
+        {/* Blood Pressure Chart */}
+        <View style={styles.chartSection}>
+          <Text style={styles.chartTitle}>🩸 Blood Pressure (mmHg)</Text>
+          <LineChart
+            data={bloodPressureChartData}
+            width={Dimensions.get('window').width - 32}
+            height={220}
+            chartConfig={{
+              ...chartConfig,
+              color: (opacity = 1) => `rgba(255, 0, 0, ${opacity})` , // Red for systolic
+            }}
+            bezier
+            style={{ marginVertical: 8, borderRadius: 16 }}
+          />
+          <View style={styles.legend}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendIcon, { backgroundColor: '#FF0000' }]} />
+              <Text style={styles.legendText}>Systolic</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendIcon, { backgroundColor: '#0000FF' }]} />
+              <Text style={styles.legendText}>Diastolic</Text>
+            </View>
+          </View>
+
+          <View style={styles.ecgInfo}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Blood Pressure</Text>
+              <Text style={styles.infoValue}>{bloodPressure.systolic}/{bloodPressure.diastolic} <Text style={styles.infoUnit}>MMHG</Text></Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>STATUS</Text>
+              <View style={[styles.statusBadge, { backgroundColor: `${bloodPressureStatus.color}20` }]}>
+                <View style={[styles.statusDot, { backgroundColor: bloodPressureStatus.color }]} />
+                <Text style={[styles.statusText, { color: bloodPressureStatus.color }]}>{bloodPressureStatus.status.toUpperCase()}</Text>
+              </View>
+            </View>
+          </View>
+
+        </View>
+
+        {/* Oxygen Level Chart */}
+        <View style={styles.chartSection}>
+          <Text style={styles.chartTitle}>💨 Oxygen Level (%)</Text>
+          <LineChart
+            data={oxygenChartData}
+            width={Dimensions.get('window').width - 32}
+            height={220}
+            chartConfig={{
+              ...chartConfig,
+              color: (opacity = 1) => `rgba(0, 200, 83, ${opacity})` , // Green
+            }}
+            bezier
+            style={{ marginVertical: 8, borderRadius: 16 }}
+          />
+          <Text style={styles.chartSubtitle}>Each dot represents your oxygen reading per day.</Text>
+          <View style={styles.ecgInfo}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Oxygen Level</Text>
+              <Text style={styles.infoValue}>{oxygenLevel} <Text style={styles.infoUnit}>%</Text></Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>STATUS</Text>
+              <View style={[styles.statusBadge, { backgroundColor: `${oxygenStatus.color}20` }]}>
+                <View style={[styles.statusDot, { backgroundColor: oxygenStatus.color }]} />
+                <Text style={[styles.statusText, { color: oxygenStatus.color }]}>{oxygenStatus.status.toUpperCase()}</Text>
+              </View>
+            </View>
           </View>
         </View>
+
+        {/* Blood Glucose Chart */}
+        <View style={styles.chartSection}>
+          <Text style={styles.chartTitle}>🍬 Blood Glucose (mg/dL)</Text>
+          <LineChart
+            data={glucoseChartData}
+            width={Dimensions.get('window').width - 32}
+            height={220}
+            chartConfig={{
+              ...chartConfig,
+              color: (opacity = 1) => `rgba(255, 165, 0, ${opacity})` , // Orange
+            }}
+            bezier
+            style={{ marginVertical: 8, borderRadius: 16 }}
+          />
+          <Text style={styles.chartSubtitle}>Smooth curve, rounded chart corners, light gray background.</Text>
+          <View style={styles.ecgInfo}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Blood Glucose</Text>
+              <Text style={styles.infoValue}>{bloodGlucose} <Text style={styles.infoUnit}>MG/DL</Text></Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>STATUS</Text>
+              <View style={[styles.statusBadge, { backgroundColor: `${bloodGlucoseStatus.color}20` }]}>
+                <View style={[styles.statusDot, { backgroundColor: bloodGlucoseStatus.color }]} />
+                <Text style={[styles.statusText, { color: bloodGlucoseStatus.color }]}>{bloodGlucoseStatus.status.toUpperCase()}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+       
         
         <View style={styles.spacer} />
       </ScrollView>
@@ -758,11 +1025,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   section: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#ebeff3',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     marginHorizontal: 16,
+    alignSelf: 'stretch',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -787,7 +1055,7 @@ const styles = StyleSheet.create({
   },
   ecgGraph: {
     height: 150,
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#f8f9fb',
     borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
@@ -811,7 +1079,7 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#030405',
   },
   infoUnit: {
     fontSize: 16,
@@ -839,12 +1107,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   // Chart styles
-  chartContainer: {
+  chartSection: {
     backgroundColor: '#ebeff3',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     marginHorizontal: 16,
+    
+  },
+  chartContainer: {
+    backgroundColor: '#ebeff3',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    marginRight: 16,
+    marginLeft: 16,
   },
   chartHeader: {
     flexDirection: 'row',
@@ -857,6 +1134,13 @@ const styles = StyleSheet.create({
     color: '#030405',
     textTransform: 'uppercase',
     letterSpacing: 1,
+    marginLeft: 20,
+  },
+  chartSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
+    textAlign: 'center',
   },
   chartValue: {
     fontSize: 16,
@@ -865,7 +1149,7 @@ const styles = StyleSheet.create({
   },
   chartWrapper: {
     flexDirection: 'row',
-    height: 200,
+    height: 180, // Increased height to accommodate X-axis labels
   },
   yAxis: {
     width: 30,
@@ -880,22 +1164,27 @@ const styles = StyleSheet.create({
   chart: {
     flex: 1,
     height: '100%',
+    
   },
   xAxis: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 8,
+    paddingHorizontal: 40, // Add padding to align with chart area
+    width: '100%',
   },
   xAxisLabel: {
     fontSize: 10,
-    color: '#8F9BB3',
+    color: '#030405',
     width: 40,
     textAlign: 'center',
     marginLeft: -20,
+    backgroundColor: 'transparent',
   },
   legend: {
     flexDirection: 'row',
     marginTop: 12,
+    justifyContent: 'center',
   },
   legendItem: {
     flexDirection: 'row',
@@ -910,6 +1199,7 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 12,
     color: '#8F9BB3',
+    textAlign: 'center',
   },
   // Controls
   controls: {
