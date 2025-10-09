@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ApiService from '../services/ApiService';
 
 // User Context
 const UserContext = createContext(null);
@@ -35,7 +36,6 @@ export const UserProvider = ({ children }) => {
   const login = async (userData) => {
     try {
       await AsyncStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
     } catch (error) {
       console.error('Error saving user data:', error);
     }
@@ -43,10 +43,18 @@ export const UserProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem('user');
+      // Use the centralized logout from ApiService to ensure all data is cleared
+      await ApiService.logout();
+
+      // Update UserContext state
       setUser(null);
+
+      console.log('✅ UserContext logout completed successfully');
     } catch (error) {
-      console.error('Error removing user data:', error);
+      console.error('Error during UserContext logout:', error);
+      // Even if logout fails, we should still clear local state
+      setUser(null);
+      throw error;
     }
   };
 
@@ -54,7 +62,6 @@ export const UserProvider = ({ children }) => {
     try {
       const newUserData = { ...user, ...updatedUserData };
       await AsyncStorage.setItem('user', JSON.stringify(newUserData));
-      setUser(newUserData);
     } catch (error) {
       console.error('Error updating user data:', error);
     }
