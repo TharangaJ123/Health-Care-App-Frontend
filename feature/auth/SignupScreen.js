@@ -132,13 +132,13 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
 
         console.log('✅ Registration successful! Email verification sent.');
 
+        // Navigate to Login page immediately
+        navigation.navigate('Login');
+
         // Show success message with email verification info
         Alert.alert(
           'Registration Successful!',
-          'Account created successfully! Please check your email and click the verification link before logging in.',
-          [
-            { text: 'OK', onPress: () => navigation.navigate('Login') }
-          ]
+          'Account created successfully! Please check your email and click the verification link before logging in.'
         );
       }
 
@@ -374,7 +374,11 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
                 }}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={24}
+                  color="#666"
+                />
               </TouchableOpacity>
             </View>
             {formData.password && (
@@ -420,7 +424,11 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
                 }}
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                
+                <Ionicons
+                  name={showConfirmPassword ? 'eye-off' : 'eye'}
+                  size={24}
+                  color="#666"
+                />
               </TouchableOpacity>
             </View>
             {formData.confirmPassword && (
@@ -469,7 +477,7 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
           <Text style={authStyles.googleButtonText}>Continue with Google</Text>
         </TouchableOpacity>
 
-        {/* Footer */}
+      
         <View style={authStyles.footer}>
           <Text style={authStyles.footerText}>
             Already have an account?{' '}
