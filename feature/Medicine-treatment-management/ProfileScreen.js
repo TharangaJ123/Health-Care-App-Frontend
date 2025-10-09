@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useUser } from '../../context/UserContext';
+import { useAuth } from '../../context/AuthContext';
 import StorageService from '../../services/StorageService';
 import { theme } from '../../utils/theme';
 import Header from '../Header';
 
 const ProfileScreen = ({ navigation }) => {
-  const { user, updateUser, logout } = useUser();
+  const { user, updateUser } = useUser();
+  const { logout: authLogout } = useAuth();
   const [profile, setProfile] = useState({
     name: '',
     age: '',
@@ -214,8 +216,11 @@ const ProfileScreen = ({ navigation }) => {
                     text: 'Logout', 
                     style: 'destructive',
                     onPress: async () => {
-                      await logout();
-                      navigation.replace('Login');
+                      await authLogout();
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Login' }]
+                      });
                     }
                   }
                 ]
