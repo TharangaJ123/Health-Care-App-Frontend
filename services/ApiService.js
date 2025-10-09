@@ -135,7 +135,10 @@ class ApiService {
   // Logout
   static async logout() {
     try {
-      await AsyncStorage.removeItem('authToken');
+      // Clear all authentication and user data
+      await AsyncStorage.multiRemove(['authToken', 'userData', 'user']);
+
+      console.log('✅ All authentication data cleared from AsyncStorage');
       return true;
     } catch (error) {
       console.error('Logout error:', error);

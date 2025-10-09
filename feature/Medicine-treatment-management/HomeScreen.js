@@ -373,7 +373,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
 
             {/* Goal */}
-            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Reports')}>
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Main', { tab: 'goal' })}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#8B5CF6'}]}>
                 <Feather name="target" size={24} color="#fff" />
               </View>
@@ -381,7 +381,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
 
             {/* Blog */}
-            <TouchableOpacity style={styles.quickActionButton} onPress={() => Alert.alert('Blog', 'Coming soon') }>
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Main', { tab: 'blog' })}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#6B7280'}]}>
                 <Feather name="file-text" size={24} color="#fff" />
               </View>
@@ -389,7 +389,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
 
             {/* Community */}
-            <TouchableOpacity style={styles.quickActionButton} onPress={() => Alert.alert('Community', 'Coming soon') }>
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Community')}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#F59E0B'}]}>
                 <Feather name="users" size={24} color="#fff" />
               </View>
@@ -397,7 +397,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
 
             {/* Appointment */}
-            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Dashboard')}>
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('MyAppointments')}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#EC4899'}]}>
                 <Feather name="calendar" size={24} color="#fff" />
               </View>
