@@ -68,12 +68,14 @@ class ApiService {
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Throw error with the message from the server
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
       console.error('API request failed:', error);
       throw error;
@@ -128,6 +130,12 @@ class ApiService {
       }
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Provide specific error message for 403
+      if (error.message.includes('403')) {
+        throw new Error('Email not verified. Please check your email and verify your account before logging in.');
+      }
+      
       throw error;
     }
   }

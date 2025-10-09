@@ -11,12 +11,11 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useUser } from '../../context/UserContext';
+import ApiService from '../../services/ApiService';
 import { authStyles } from './styles/AuthStyles';
 import { validateField } from './validationUtils';
 
-const LoginScreen = ({ navigation }) => {
-  const { login } = useUser();
+const LoginScreen = ({ navigation, onLogin }) => {
   const [userType, setUserType] = useState('patient');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -88,27 +87,23 @@ const LoginScreen = ({ navigation }) => {
     setLoading(true);
 
     try {
-      console.log('🔐 Attempting login...');
+      console.log('🔐 Attempting login with backend...');
       console.log('📧 Email:', email);
+      console.log('👤 User Type:', userType);
+      console.log('🔗 Backend URL: http://localhost:5000/api/auth/login');
 
-      // Simple login validation (you can replace this with your API call)
-      if (email && password) {
-        console.log('✅ Login successful');
-        
-        // Create user data object
-        const userData = {
-          email: email,
-          name: email.split('@')[0], // Use email prefix as name
-          userType: userType,
-          loginTime: new Date().toISOString(),
-        };
+      // Call ApiService to authenticate with Firebase backend
+      const response = await ApiService.login({ email, password, userType });
 
-        // Save user data using context
-        await login(userData);
-        
-        // Navigate to Home
-        navigation.replace('Home');
-        
+      if (response.success) {
+        console.log('✅ Login successful with Firebase backend');
+        console.log('👤 User:', response.user.email);
+
+        // Call the onLogin prop to handle successful login (for navigation)
+        if (onLogin) {
+          await onLogin(email, password, navigation);
+        }
+
         setLoginError(''); // Clear any previous error
       } else {
         console.log('❌ Login failed');
@@ -117,7 +112,16 @@ const LoginScreen = ({ navigation }) => {
 
     } catch (error) {
       console.error('❌ Login error:', error);
-      setLoginError(error.message || 'Login failed. Please check your connection and try again.');
+      
+      // Check for specific error types
+      if (error.message.includes('registered as a')) {
+        // User type mismatch error
+        setLoginError(error.message);
+      } else if (error.message.includes('403')) {
+        setLoginError('Email not verified. Please check your email and verify your account before logging in.');
+      } else {
+        setLoginError(error.message || 'Login failed. Please check your connection and try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -125,7 +129,7 @@ const LoginScreen = ({ navigation }) => {
 
   const handleGoogleLogin = async () => {
     try {
-      // TODO: Implement Google login
+      // Implement Google login
       console.log('Google login attempt for:', userType);
       Alert.alert('Info', 'Google login will be implemented with proper configuration');
     } catch (error) {
@@ -271,7 +275,11 @@ const LoginScreen = ({ navigation }) => {
                 }}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={24}
+                  color="#666"
+                />
               </TouchableOpacity>
             </View>
             {password && (
@@ -328,7 +336,7 @@ const LoginScreen = ({ navigation }) => {
           <Text style={authStyles.googleButtonText}>Continue with Google</Text>
         </TouchableOpacity>
 
-        {/* Footer */}
+       
         <View style={authStyles.footer}>
           <Text style={authStyles.footerText}>
             Don't have an account?{' '}
