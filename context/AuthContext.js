@@ -93,7 +93,6 @@ export const AuthProvider = ({ children }) => {
         throw new Error(response.error || 'Registration failed');
       }
     } catch (error) {
-      console.error('Signup error:', error);
       alert('Registration failed. Please try again.');
       throw error;
     }
@@ -101,12 +100,23 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      // Clear all authentication data using ApiService (which handles all storage cleanup)
       await ApiService.logout();
+
+      // Update AuthContext state
       setIsAuthenticated(false);
       setUser(null);
-      await AsyncStorage.removeItem('userData');
+
+      // Note: ApiService.logout() already cleared all AsyncStorage data
+      // No need to remove userData here as it's already handled
+
+      console.log('✅ User logged out successfully');
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if logout fails, we should still clear local state
+      setIsAuthenticated(false);
+      setUser(null);
+      throw error;
     }
   };
 
