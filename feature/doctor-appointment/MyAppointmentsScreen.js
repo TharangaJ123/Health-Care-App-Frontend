@@ -1,13 +1,19 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Calendar } from 'react-native-calendars';
 import { styles } from './styles/AppointmentStyles';
+import { useUser } from '../../context/UserContext';
 
 // Adjust per environment: iOS sim localhost, Android emulator 10.0.2.2, real device LAN IP
 const API_BASE = 'http://192.168.8.190:5000';
 
 function MyAppointmentsScreen({ navigation }) {
+  const { user } = useUser?.() || {};
+  const getUserId = () => {
+    const u = user || {};
+    return u.id || u._id || u.uid || u.userId || u.email || '';
+  };
   const [appointments, setAppointments] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,10 +38,19 @@ function MyAppointmentsScreen({ navigation }) {
     try {
       setLoading(true);
       setError('');
-      const res = await fetch(`${API_BASE}/api/appointments`);
+      const uid = getUserId();
+      const qs = uid ? `?userId=${encodeURIComponent(uid)}` : '';
+      const res = await fetch(`${API_BASE}/api/appointments${qs}`);
       if (!res.ok) throw new Error('Failed to load appointments');
       const data = await res.json();
-      setAppointments(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      const filtered = uid
+        ? list.filter((apt) => {
+            const aid = apt.userId || apt.patientUserId || apt.ownerId;
+            return aid ? String(aid) === String(uid) : false;
+          })
+        : list;
+      setAppointments(filtered);
     } catch (e) {
       setError(e.message || 'Failed to load appointments');
     } finally {
@@ -100,26 +115,51 @@ function MyAppointmentsScreen({ navigation }) {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>My Appointments</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <TouchableOpacity
+            style={styles.iconButtonOutline}
+            onPress={() => navigation.goBack()}
+            accessibilityLabel="Back"
+          >
+            <Text style={styles.iconButtonOutlineText}>{'\u2190'}</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>My Appointments</Text>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate('DoctorAppointment')}
+            accessibilityLabel="New Appointment"
+          >
+            <Text style={styles.iconButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Calendar to pick and filter by date */}
-        <Calendar
-          onDayPress={(day) => setSelectedDate(day.dateString)}
-          markedDates={appointments.reduce((acc, apt) => {
-            acc[apt.appointmentDate] = {
-              marked: true,
-              dotColor: '#2196F3',
-              selected: selectedDate === apt.appointmentDate,
-              selectedColor: '#2196F3',
-            };
-            return acc;
-          }, {})}
-          theme={{
-            selectedDayBackgroundColor: '#2196F3',
-            todayTextColor: '#2196F3',
-            arrowColor: '#2196F3',
-          }}
-        />
+        <View style={styles.calendarBox}>
+          <Calendar
+            onDayPress={(day) => setSelectedDate(day.dateString)}
+            markedDates={appointments.reduce((acc, apt) => {
+              acc[apt.appointmentDate] = {
+                marked: true,
+                dotColor: '#2196F3',
+                selected: selectedDate === apt.appointmentDate,
+                selectedColor: '#2196F3',
+              };
+              return acc;
+            }, {})}
+            theme={{
+              calendarBackground: '#F9FBFF',
+              selectedDayBackgroundColor: '#2196F3',
+              selectedDayTextColor: '#FFFFFF',
+              todayTextColor: '#1976D2',
+              dayTextColor: '#1E3A5F',
+              textDisabledColor: '#B0BEC5',
+              monthTextColor: '#0D47A1',
+              textSectionTitleColor: '#1976D2',
+              arrowColor: '#2196F3',
+            }}
+          />
+        </View>
+        <View style={styles.spacerMd} />
 
         {/* Filtered list by selected date (if any) */}
         {loading ? (
@@ -131,8 +171,16 @@ function MyAppointmentsScreen({ navigation }) {
             <Text style={{ color: 'red' }}>{error}</Text>
           </View>
         ) : appointments.length === 0 ? (
-          <View style={{ paddingTop: 40, alignItems: 'center' }}>
-            <Text style={{ color: '#757575', fontSize: 16 }}>No appointments yet</Text>
+          <View style={{ paddingTop: 40, alignItems: 'center', paddingHorizontal: 24 }}>
+            <Image
+              source={{ uri: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=800&auto=format&fit=crop' }}
+              style={{ width: '100%', height: 160, borderRadius: 12, marginBottom: 12, backgroundColor: '#E3F2FD' }}
+              resizeMode="cover"
+            />
+            <Text style={{ color: '#1976D2', fontSize: 18, fontWeight: '600', marginBottom: 6 }}>No appointments yet</Text>
+            <Text style={{ color: '#607D8B', fontSize: 14, textAlign: 'center' }}>
+              Tap "New Appointment" to book your first visit and it will show up here.
+            </Text>
           </View>
         ) : (
           appointments

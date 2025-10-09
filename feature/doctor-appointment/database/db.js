@@ -58,12 +58,19 @@ export const saveAppointment = async (appointmentData) => {
   }
 };
 
-// Get all appointments -> GET /api/appointments
-export const getAllAppointments = async () => {
+// Get all appointments (optionally for a specific user) -> GET /api/appointments[?userId=:id]
+export const getAllAppointments = async (userId) => {
   try {
-    const appointments = await apiFetch('/api/appointments');
+    const qs = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+    const appointments = await apiFetch(`/api/appointments${qs}`);
+    // Optional client-side filter if backend ignores query param
+    const list = (appointments || []).filter((apt) => {
+      if (!userId) return true;
+      const uid = apt.userId || apt.patientUserId || apt.ownerId;
+      return uid ? String(uid) === String(userId) : false;
+    });
     // Sort by date and time descending (keep existing UX)
-    return (appointments || []).sort((a, b) => {
+    return list.sort((a, b) => {
       const dateCompare = (b.appointmentDate || '').localeCompare(a.appointmentDate || '');
       if (dateCompare !== 0) return dateCompare;
       return (b.appointmentTime || '').localeCompare(a.appointmentTime || '');

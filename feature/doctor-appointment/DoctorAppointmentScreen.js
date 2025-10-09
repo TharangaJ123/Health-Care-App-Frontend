@@ -4,8 +4,16 @@ import { Calendar } from 'react-native-calendars';
 import { useFocusEffect } from '@react-navigation/native';
 import { styles } from './styles/AppointmentStyles';
 import { initDatabase, saveAppointment, getAllAppointments, getDoctors } from './database/db';
+import { useAuth } from '../../context/AuthContext';
+import { useUser } from '../../context/UserContext';
 
 function DoctorAppointmentScreen({ navigation }) {
+  const { user: authUser } = useAuth?.() || {};
+  const { user: ctxUser } = useUser?.() || {};
+  const getUserId = () => {
+    const u = ctxUser || authUser || {};
+    return u.id || u._id || u.uid || u.userId || u.email || '';
+  };
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -29,7 +37,7 @@ function DoctorAppointmentScreen({ navigation }) {
   );
 
   const loadAppointments = async () => {
-    const data = await getAllAppointments();
+    const data = await getAllAppointments(getUserId());
     setAppointments(data);
   };
 
@@ -49,8 +57,27 @@ function DoctorAppointmentScreen({ navigation }) {
       return;
     }
 
+    // Check if the doctor already has an appointment at the same date & time
+    try {
+      const allApts = await getAllAppointments(); // fetch all to check doctor's schedule
+      const conflict = (allApts || []).some((apt) => {
+        const sameDoctor = (apt.doctorId && String(apt.doctorId) === String(selectedDoctor.id)) || (apt.doctorName && apt.doctorName === selectedDoctor.name);
+        const sameSlot = (apt.appointmentDate === selectedDate) && (apt.appointmentTime === selectedTime);
+        return sameDoctor && sameSlot;
+      });
+      if (conflict) {
+        Alert.alert('Scheduling conflict', 'The doctor will be having another appointment at the same time. Please choose a different time.');
+        return;
+      }
+    } catch (_) {
+      // If conflict check fails, proceed with save but you can log if needed
+    }
+
     try {
       await saveAppointment({
+        userId: getUserId(),
+        patientUserId: getUserId(),
+        ownerId: getUserId(),
         doctorId: selectedDoctor.id,
         doctorName: selectedDoctor.name,
         doctorSpecialization: selectedDoctor.specialization,
@@ -59,19 +86,9 @@ function DoctorAppointmentScreen({ navigation }) {
         appointmentTime: selectedTime,
         reason,
       });
-
-      setShowSuccessModal(true);
-      
-      // Reset form
-      setTimeout(() => {
-        setSelectedDoctor(null);
-        setPatientName('');
-        setSelectedDate('');
-        setSelectedTime('');
-        setReason('');
-        setShowSuccessModal(false);
-        loadAppointments();
-      }, 2000);
+      // Navigate back to My Appointments after success
+      navigation.navigate('MyAppointments');
+      return;
     } catch (error) {
       setErrorMessage('Failed to book appointment. Please try again.');
       setShowErrorModal(true);
@@ -177,7 +194,18 @@ function DoctorAppointmentScreen({ navigation }) {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Select Doctor</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <TouchableOpacity
+            style={styles.iconButtonOutline}
+            onPress={() => navigation.goBack()}
+            accessibilityLabel="Back"
+          >
+            <Text style={styles.iconButtonOutlineText}>{'\u2190'}</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Select Doctor</Text>
+          {/* Right spacer to balance layout */}
+          <View style={{ width: 44, height: 44 }} />
+        </View>
 
         {doctors.map((doctor) => (
           <TouchableOpacity

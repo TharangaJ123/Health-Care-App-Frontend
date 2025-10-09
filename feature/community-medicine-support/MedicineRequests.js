@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { cStyles } from './styles/CommunityStyles';
 import { addResponse } from './database/store';
 
 export default function MedicineRequests({ requests = [], selectedGroupId = '', onChanged }) {
   const [search, setSearch] = useState('');
   const [responseText, setResponseText] = useState('');
+  const [responderName, setResponderName] = useState('');
   const [selectedRequest, setSelectedRequest] = useState(null);
 
   const filtered = useMemo(() => {
@@ -22,11 +23,13 @@ export default function MedicineRequests({ requests = [], selectedGroupId = '', 
     if (!selectedRequest || !responseText.trim()) return;
     await addResponse(selectedRequest.id, {
       text: responseText.trim(),
-      from: 'community',
+      from: responderName.trim() || 'community',
     });
     setResponseText('');
+    setResponderName('');
     setSelectedRequest(null);
     onChanged?.();
+    Alert.alert('Thank you', 'Your response has been submitted.');
   };
 
   return (
@@ -44,6 +47,9 @@ export default function MedicineRequests({ requests = [], selectedGroupId = '', 
         placeholder="Search medicine (e.g., Metformin 500mg)"
       />
 
+      {/* Spacer between filters and list */}
+      <View style={{ height: 16 }} />
+
       {filtered.map(req => (
         <View key={req.id} style={cStyles.card}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -57,22 +63,32 @@ export default function MedicineRequests({ requests = [], selectedGroupId = '', 
           )}
 
           <View style={{ height: 10 }} />
-          <Text style={cStyles.label}>Community Responses</Text>
-          {req.responses.length === 0 && (
-            <Text style={cStyles.smallText}>No responses yet</Text>
-          )}
-          {req.responses.map(r => (
-            <View key={r.id} style={{ marginTop: 6 }}>
-              <Text style={{ color: '#0D47A1', fontWeight: '600' }}>{r.from || 'member'}</Text>
-              <Text style={{ color: '#424242' }}>{r.text}</Text>
-              <Text style={cStyles.smallText}>{new Date(r.createdAt).toLocaleString()}</Text>
-            </View>
-          ))}
+          <View style={{ backgroundColor: '#EAF4FF', borderColor: '#BBDEFB', borderWidth: 1, borderRadius: 10, padding: 10 }}>
+            <Text style={[cStyles.label, { marginTop: 0 }]}>Community Responses</Text>
+            {req.responses.length === 0 && (
+              <Text style={cStyles.smallText}>No responses yet</Text>
+            )}
+            {req.responses.map(r => (
+              <View key={r.id} style={{ marginTop: 8, padding: 8, backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: '#E3F2FD' }}>
+                <Text style={{ color: '#0D47A1', fontWeight: '700' }}>{r.from || 'member'}</Text>
+                <Text style={{ color: '#424242', marginTop: 2 }}>{r.text}</Text>
+                <Text style={[cStyles.smallText, { marginTop: 2 }]}>{new Date(r.createdAt).toLocaleString()}</Text>
+              </View>
+            ))}
+          </View>
 
           {/* Quick reply */}
           <View style={{ height: 8 }} />
           {selectedRequest?.id === req.id ? (
             <>
+              <Text style={cStyles.label}>Your Name (optional)</Text>
+              <TextInput
+                style={cStyles.input}
+                value={responderName}
+                onChangeText={setResponderName}
+                placeholder="Enter your name (optional)"
+              />
+
               <TextInput
                 style={cStyles.input}
                 value={responseText}

@@ -398,7 +398,15 @@ const HomeScreen = () => {
             </TouchableOpacity>
 
             {/* Appointment */}
-            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('DoctorAppointment')}>
+            <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('MyAppointments')}>
+              <View style={[styles.quickActionIcon, {backgroundColor: '#EC4899'}]}>
+                <Feather name="calendar" size={24} color="#fff" />
+              </View>
+              <Text style={styles.quickActionText}>Appointment</Text>
+            </TouchableOpacity>
+
+             {/* Tempory */}
+             <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('DoctorProfile')}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#EC4899'}]}>
                 <Feather name="calendar" size={24} color="#fff" />
               </View>
