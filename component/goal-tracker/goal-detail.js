@@ -13,6 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { apiFetch } from '../../config/api';
 
+import GoalTimeline from './goal-timeline';
+
 const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) => {
   
   const [currentGoal, setCurrentGoal] = useState(goal || {
@@ -304,24 +306,22 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
         </View>
 
         {/* Action Plan (Steps) */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Action Plan</Text>
                 <Ionicons name="sparkles-outline" size={22} color="#7C3AED" />
           </View>
 
           <View>
-            {/* Always show steps list */}
             {currentGoal.steps && currentGoal.steps.length > 0 ? (
               currentGoal.steps
                 .slice()
                 .sort((a, b) => (a.order || 0) - (b.order || 0))
                 .map((s) => (
-                  <TouchableOpacity
+                  <View
                     key={String(s.id)}
                     style={[styles.stepItem, s.completed && styles.stepItemDone]}
-                    onPress={() => toggleStep(s.id)}
-                  >
+                    >
                     <View style={[styles.stepCheck, s.completed && styles.stepCheckDone]}>
                       <Ionicons
                         name={s.completed ? 'checkmark' : 'ellipse-outline'}
@@ -339,15 +339,23 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
                         </Text>
                       ) : null}
                     </View>
-                  </TouchableOpacity>
+                  </View>
                 ))
             ) : (
               <Text style={styles.noStepsText}>No steps yet.</Text>
             )}
           </View>
 
-        </View>
+        </View> */}
 
+        {/* Roadmap & Schedule */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>AI Roadmap & Schedule</Text>
+            <Ionicons name="sparkles-outline" size={22} color="#7C3AED" />
+          </View>
+          <GoalTimeline steps={Array.isArray(currentGoal.steps) ? currentGoal.steps : []} startDate={currentGoal.date} onToggleStep={toggleStep} />
+        </View>
         {/* Insights (visible when completed) */}
         {currentGoal.completed ? (
           <View style={styles.section}>
@@ -358,7 +366,7 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
               <View style={styles.progressBarBig}>
                 <View style={[styles.progressFillBig, { width: `${progressPct}%`, backgroundColor: '#34C759' }]} />
               </View>
-              <Text style={styles.progressLabel}>{stepsDone}/{stepsTotal} steps • {progressPct}%</Text>
+              <Text style={styles.progressLabel}>{stepsDone}/{stepsTotal} steps  {progressPct}%</Text>
             </View>
             {recommendations ? (
               <View style={styles.recoCard}>

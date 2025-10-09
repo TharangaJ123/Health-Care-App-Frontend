@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, Switch, SafeAreaView, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { apiFetch } from '../../config/api';
+import { useUser } from '../../context/UserContext';
 
 const CreateBlogScreen = ({ onCreated, onCancel, initial, onUpdated }) => {
+  const { user } = useUser();
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [category, setCategory] = useState('General');
@@ -75,9 +77,10 @@ const CreateBlogScreen = ({ onCreated, onCancel, initial, onUpdated }) => {
         isVerified,
         helpfulCount: Number(helpfulCount) || 0,
         categoryColor,
+        userId: user?.uid || user?.email || undefined,
       };
       if (initial?.id) {
-        const updated = await apiFetch(`/api/blogs/${initial.id}`, {
+        const updated = await apiFetch(`/api/blogs/${initial.id}?userId=${encodeURIComponent(user?.uid || user?.email || '')}`, {
           method: 'PATCH',
           body: JSON.stringify(payload),
         });
