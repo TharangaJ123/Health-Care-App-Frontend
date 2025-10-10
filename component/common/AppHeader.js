@@ -18,7 +18,6 @@ const AppHeader = ({
         {onBack ? (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
             <Icon name="chevron-back" size={24} color="#333" />
-            <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
         ) : null}
         <View>
