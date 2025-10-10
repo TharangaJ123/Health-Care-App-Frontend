@@ -7,11 +7,30 @@ const KEYS = {
   USER_PREFERENCES: 'user_preferences',
 };
 
+// Build per-user key suffix to isolate data by logged-in user
+const getUserKeySuffix = async () => {
+  try {
+    const raw = await AsyncStorage.getItem('user');
+    if (!raw) return 'guest';
+    const parsed = JSON.parse(raw);
+    const identifier = parsed?.id || parsed?.uid || parsed?.email || parsed?.userId || 'guest';
+    return String(identifier);
+  } catch {
+    return 'guest';
+  }
+};
+
+const withUserKey = async (baseKey) => {
+  const suffix = await getUserKeySuffix();
+  return `${baseKey}:${suffix}`;
+};
+
 class StorageService {
   // Medications
   async saveMedications(medications) {
     try {
-      await AsyncStorage.setItem(KEYS.MEDICATIONS, JSON.stringify(medications));
+      const key = await withUserKey(KEYS.MEDICATIONS);
+      await AsyncStorage.setItem(key, JSON.stringify(medications));
     } catch (error) {
       console.error('Error saving medications:', error);
     }
@@ -19,7 +38,8 @@ class StorageService {
 
   async getMedications() {
     try {
-      const medications = await AsyncStorage.getItem(KEYS.MEDICATIONS);
+      const key = await withUserKey(KEYS.MEDICATIONS);
+      const medications = await AsyncStorage.getItem(key);
       return medications ? JSON.parse(medications) : [];
     } catch (error) {
       console.error('Error getting medications:', error);
@@ -50,7 +70,7 @@ class StorageService {
       const index = medications.findIndex(med => med.id === id);
       if (index !== -1) {
         medications[index] = { ...medications[index], ...updates };
-        await this.saveMedications(medications);
+      await this.saveMedications(medications);
         return medications[index];
       }
       throw new Error('Medication not found');
@@ -74,7 +94,8 @@ class StorageService {
   // Medication Logs
   async saveMedicationLogs(logs) {
     try {
-      await AsyncStorage.setItem(KEYS.MEDICATION_LOGS, JSON.stringify(logs));
+      const key = await withUserKey(KEYS.MEDICATION_LOGS);
+      await AsyncStorage.setItem(key, JSON.stringify(logs));
     } catch (error) {
       console.error('Error saving medication logs:', error);
     }
@@ -82,7 +103,8 @@ class StorageService {
 
   async getMedicationLogs() {
     try {
-      const logs = await AsyncStorage.getItem(KEYS.MEDICATION_LOGS);
+      const key = await withUserKey(KEYS.MEDICATION_LOGS);
+      const logs = await AsyncStorage.getItem(key);
       return logs ? JSON.parse(logs) : [];
     } catch (error) {
       console.error('Error getting medication logs:', error);
@@ -139,7 +161,8 @@ class StorageService {
   // Reminders
   async saveReminders(reminders) {
     try {
-      await AsyncStorage.setItem(KEYS.REMINDERS, JSON.stringify(reminders));
+      const key = await withUserKey(KEYS.REMINDERS);
+      await AsyncStorage.setItem(key, JSON.stringify(reminders));
     } catch (error) {
       console.error('Error saving reminders:', error);
     }
@@ -147,7 +170,8 @@ class StorageService {
 
   async getReminders() {
     try {
-      const reminders = await AsyncStorage.getItem(KEYS.REMINDERS);
+      const key = await withUserKey(KEYS.REMINDERS);
+      const reminders = await AsyncStorage.getItem(key);
       return reminders ? JSON.parse(reminders) : [];
     } catch (error) {
       console.error('Error getting reminders:', error);
@@ -178,7 +202,7 @@ class StorageService {
       const index = reminders.findIndex(reminder => reminder.id === id);
       if (index !== -1) {
         reminders[index] = { ...reminders[index], ...updates };
-        await this.saveReminders(reminders);
+      await this.saveReminders(reminders);
         return reminders[index];
       }
       throw new Error('Reminder not found');
@@ -202,7 +226,8 @@ class StorageService {
   // User Preferences
   async saveUserPreferences(preferences) {
     try {
-      await AsyncStorage.setItem(KEYS.USER_PREFERENCES, JSON.stringify(preferences));
+      const key = await withUserKey(KEYS.USER_PREFERENCES);
+      await AsyncStorage.setItem(key, JSON.stringify(preferences));
     } catch (error) {
       console.error('Error saving user preferences:', error);
     }
@@ -210,7 +235,8 @@ class StorageService {
 
   async getUserPreferences() {
     try {
-      const preferences = await AsyncStorage.getItem(KEYS.USER_PREFERENCES);
+      const key = await withUserKey(KEYS.USER_PREFERENCES);
+      const preferences = await AsyncStorage.getItem(key);
       return preferences ? JSON.parse(preferences) : {
         notifications: true,
         soundEnabled: true,
@@ -259,12 +285,11 @@ class StorageService {
   // Clear all data (for testing or reset)
   async clearAllData() {
     try {
-      await AsyncStorage.multiRemove([
-        KEYS.MEDICATIONS,
-        KEYS.MEDICATION_LOGS,
-        KEYS.REMINDERS,
-        KEYS.USER_PREFERENCES,
-      ]);
+      const meds = await withUserKey(KEYS.MEDICATIONS);
+      const logs = await withUserKey(KEYS.MEDICATION_LOGS);
+      const rem = await withUserKey(KEYS.REMINDERS);
+      const prefs = await withUserKey(KEYS.USER_PREFERENCES);
+      await AsyncStorage.multiRemove([meds, logs, rem, prefs]);
     } catch (error) {
       console.error('Error clearing all data:', error);
     }

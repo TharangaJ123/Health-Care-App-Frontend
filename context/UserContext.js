@@ -45,9 +45,7 @@ export const UserProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Use the centralized logout from ApiService to ensure all data is cleared
-      await ApiService.logout();
-      // Update UserContext state
+      // Only clear UserContext state - AuthContext handles the main logout
       setUser(null);
       console.log('✅ UserContext logout completed successfully');
     } catch (error) {

@@ -100,15 +100,15 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      // Get current user data before clearing it (needed for clearing user-specific storage)
+      const currentUserData = user;
+
       // Clear all authentication data using ApiService (which handles all storage cleanup)
-      await ApiService.logout();
+      await ApiService.logout(currentUserData);
 
       // Update AuthContext state
       setIsAuthenticated(false);
       setUser(null);
-
-      // Note: ApiService.logout() already cleared all AsyncStorage data
-      // No need to remove userData here as it's already handled
 
       console.log('✅ User logged out successfully');
     } catch (error) {

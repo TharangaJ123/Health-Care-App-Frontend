@@ -6,13 +6,32 @@ const STORAGE_KEYS = {
   LAST_ID: '@last_id',
 };
 
+// Derive a per-user key suffix so data is isolated between users
+const getUserKeySuffix = async () => {
+  try {
+    const raw = await AsyncStorage.getItem('user');
+    if (!raw) return 'guest';
+    const parsed = JSON.parse(raw);
+    const identifier = parsed?.id || parsed?.uid || parsed?.email || parsed?.userId || 'guest';
+    return String(identifier);
+  } catch {
+    return 'guest';
+  }
+};
+
+const withUserKey = async (baseKey) => {
+  const suffix = await getUserKeySuffix();
+  return `${baseKey}:${suffix}`;
+};
+
 let lastId = 0;
 const generateId = async () => {
   try {
-    const storedId = await AsyncStorage.getItem(STORAGE_KEYS.LAST_ID);
+    const lastIdKey = await withUserKey(STORAGE_KEYS.LAST_ID);
+    const storedId = await AsyncStorage.getItem(lastIdKey);
     lastId = storedId ? parseInt(storedId, 10) : 0;
     const newId = lastId + 1;
-    await AsyncStorage.setItem(STORAGE_KEYS.LAST_ID, newId.toString());
+    await AsyncStorage.setItem(lastIdKey, newId.toString());
     return newId;
   } catch (error) {
     return Date.now(); // Fallback to timestamp
@@ -31,7 +50,8 @@ const saveMedication = async (medication) => {
     };
     
     medications.push(newMedication);
-    await AsyncStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify(medications));
+    const medsKey = await withUserKey(STORAGE_KEYS.MEDICATIONS);
+    await AsyncStorage.setItem(medsKey, JSON.stringify(medications));
     
     // Generate schedule entries for this medication
     await generateScheduleEntries(newMedication);
@@ -45,7 +65,8 @@ const saveMedication = async (medication) => {
 
 const getMedications = async () => {
   try {
-    const medicationsJson = await AsyncStorage.getItem(STORAGE_KEYS.MEDICATIONS);
+    const medsKey = await withUserKey(STORAGE_KEYS.MEDICATIONS);
+    const medicationsJson = await AsyncStorage.getItem(medsKey);
     const medications = medicationsJson ? JSON.parse(medicationsJson) : [];
     // Ensure all IDs are numbers for consistency
     return medications.map(med => ({
@@ -106,7 +127,8 @@ const updateMedication = async (id, updates) => {
     };
     
     medications[index] = updatedMedication;
-    await AsyncStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify(medications));
+    const medsKey = await withUserKey(STORAGE_KEYS.MEDICATIONS);
+    await AsyncStorage.setItem(medsKey, JSON.stringify(medications));
     
     // Regenerate schedule entries for updated medication
     await generateScheduleEntries(updatedMedication);
@@ -138,7 +160,8 @@ const deleteMedication = async (id) => {
     updatedMedications.splice(index, 1);
     
     // Save the updated medications list
-    await AsyncStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify(updatedMedications));
+    const medsKey = await withUserKey(STORAGE_KEYS.MEDICATIONS);
+    await AsyncStorage.setItem(medsKey, JSON.stringify(updatedMedications));
     
     // Remove all schedule entries for this medication
     await removeScheduleEntriesForMedication(id);
@@ -182,7 +205,8 @@ const generateScheduleEntries = async (medication) => {
     }
     
     const updatedSchedule = [...filteredSchedule, ...newEntries];
-    await AsyncStorage.setItem(STORAGE_KEYS.MEDICATION_SCHEDULE, JSON.stringify(updatedSchedule));
+    const schedKey = await withUserKey(STORAGE_KEYS.MEDICATION_SCHEDULE);
+    await AsyncStorage.setItem(schedKey, JSON.stringify(updatedSchedule));
     
     return newEntries;
   } catch (error) {
@@ -214,7 +238,8 @@ const shouldTakeMedicationOnDate = (medication, date) => {
 
 const getSchedule = async () => {
   try {
-    const scheduleJson = await AsyncStorage.getItem(STORAGE_KEYS.MEDICATION_SCHEDULE);
+    const schedKey = await withUserKey(STORAGE_KEYS.MEDICATION_SCHEDULE);
+    const scheduleJson = await AsyncStorage.getItem(schedKey);
     return scheduleJson ? JSON.parse(scheduleJson) : [];
   } catch (error) {
     console.error('Error getting schedule:', error);
@@ -272,7 +297,8 @@ const updateStatus = async (scheduleId, status) => {
       updatedAt: new Date().toISOString(),
     };
     
-    await AsyncStorage.setItem(STORAGE_KEYS.MEDICATION_SCHEDULE, JSON.stringify(schedule));
+    const schedKey = await withUserKey(STORAGE_KEYS.MEDICATION_SCHEDULE);
+    await AsyncStorage.setItem(schedKey, JSON.stringify(schedule));
     
     return schedule[index];
   } catch (error) {
@@ -297,7 +323,8 @@ const removeScheduleEntriesForMedication = async (medicationId) => {
     });
     
     if (schedule.length !== filteredSchedule.length) {
-      await AsyncStorage.setItem(STORAGE_KEYS.MEDICATION_SCHEDULE, JSON.stringify(filteredSchedule));
+      const schedKey = await withUserKey(STORAGE_KEYS.MEDICATION_SCHEDULE);
+      await AsyncStorage.setItem(schedKey, JSON.stringify(filteredSchedule));
       return true;
     }
     
@@ -382,9 +409,12 @@ const getMonthlyAdherence = async () => {
 
 const clearAllData = async () => {
   try {
-    await AsyncStorage.removeItem(STORAGE_KEYS.MEDICATIONS);
-    await AsyncStorage.removeItem(STORAGE_KEYS.MEDICATION_SCHEDULE);
-    await AsyncStorage.removeItem(STORAGE_KEYS.LAST_ID);
+    const medsKey = await withUserKey(STORAGE_KEYS.MEDICATIONS);
+    const schedKey = await withUserKey(STORAGE_KEYS.MEDICATION_SCHEDULE);
+    const lastIdKey = await withUserKey(STORAGE_KEYS.LAST_ID);
+    await AsyncStorage.removeItem(medsKey);
+    await AsyncStorage.removeItem(schedKey);
+    await AsyncStorage.removeItem(lastIdKey);
     return true;
   } catch (error) {
     console.error('Error clearing all data:', error);
