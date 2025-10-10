@@ -145,12 +145,46 @@ class ApiService {
   }
 
   // Logout
-  static async logout() {
+  static async logout(currentUserData = null) {
     try {
       // Clear all authentication and user data
       await AsyncStorage.multiRemove(['authToken', 'userData', 'user']);
 
-      console.log('✅ All authentication data cleared from AsyncStorage');
+      // Clear all user-specific storage data from different storage systems
+      let userId = null;
+
+      // If currentUserData is provided, use it to get user ID
+      if (currentUserData) {
+        userId = currentUserData?.id || currentUserData?.uid || currentUserData?.email || currentUserData?.userId;
+      } else {
+        // Fallback: try to get user data before it's cleared
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          userId = user?.id || user?.uid || user?.email || user?.userId;
+        }
+      }
+
+      if (userId && userId !== 'guest') {
+        // Clear storage.js data (medication data)
+        const storageKeys = [
+          `@medications:${userId}`,
+          `@medication_schedule:${userId}`,
+          `@last_id:${userId}`
+        ];
+        await AsyncStorage.multiRemove(storageKeys);
+
+        // Clear StorageService.js data
+        const storageServiceKeys = [
+          `medications:${userId}`,
+          `medication_logs:${userId}`,
+          `reminders:${userId}`,
+          `user_preferences:${userId}`
+        ];
+        await AsyncStorage.multiRemove(storageServiceKeys);
+      }
+
+      console.log('✅ All authentication and user data cleared from AsyncStorage');
       return true;
     } catch (error) {
       console.error('Logout error:', error);

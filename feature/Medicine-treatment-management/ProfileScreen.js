@@ -13,11 +13,12 @@ import Icon from '../../component/common/Icon';
 import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../context/AuthContext';
 import StorageService from '../../services/StorageService';
+import { getMedications, getWeeklyAdherence, getMonthlyAdherence } from '../../utils/storage';
 import { theme } from '../../utils/theme';
 import Header from '../Header';
 
 const ProfileScreen = ({ navigation }) => {
-  const { user, updateUser } = useUser();
+  const { user, updateUser, logout: userLogout } = useUser();
   const { logout: authLogout } = useAuth();
   const [profile, setProfile] = useState({
     name: '',
@@ -30,11 +31,13 @@ const ProfileScreen = ({ navigation }) => {
     doctor: '',
     pharmacy: '',
   });
+  const [stats, setStats] = useState({
+    medications: 0,
+    daysActive: 0,
+    adherence: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-
-  useEffect(() => {
-    loadProfile();
-  }, []);
 
   const loadProfile = async () => {
     try {
@@ -46,7 +49,7 @@ const ProfileScreen = ({ navigation }) => {
           email: user.email || '',
         }));
       }
-      
+
       // Then load additional profile data from storage
       const preferences = await StorageService.getUserPreferences();
       setProfile(prev => ({
@@ -59,6 +62,62 @@ const ProfileScreen = ({ navigation }) => {
       console.error('Error loading profile:', error);
     }
   };
+
+  const loadStats = async () => {
+    try {
+      // Get medication count
+      const medications = await getMedications();
+      const medicationCount = medications ? medications.length : 0;
+
+      // Get adherence stats (use weekly for more recent data)
+      let adherencePercentage = 0;
+      try {
+        const adherenceStats = await getWeeklyAdherence();
+        adherencePercentage = Math.round(adherenceStats?.adherenceRate || 0);
+      } catch (adherenceError) {
+        console.warn('Could not load adherence stats:', adherenceError);
+      }
+
+      // Calculate days active (based on user registration or first medication)
+      let daysActive = 0;
+      if (medications && medications.length > 0) {
+        const firstMedication = medications[0];
+        if (firstMedication?.createdAt || firstMedication?.startDate) {
+          const startDate = new Date(firstMedication.createdAt || firstMedication.startDate);
+          const today = new Date();
+          daysActive = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+        }
+      }
+
+      setStats({
+        medications: medicationCount,
+        daysActive: Math.max(0, daysActive), // Ensure non-negative
+        adherence: adherencePercentage,
+      });
+    } catch (error) {
+      console.error('Error loading stats:', error);
+      // Set default values on error
+      setStats({
+        medications: 0,
+        daysActive: 0,
+        adherence: 0,
+      });
+    }
+  };
+
+  useEffect(() => {
+    const initializeProfile = async () => {
+      setLoading(true);
+      try {
+        await loadProfile();
+        await loadStats(); // Load stats after profile is loaded
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeProfile();
+  }, []);
 
   const saveProfile = async () => {
     try {
@@ -76,6 +135,9 @@ const ProfileScreen = ({ navigation }) => {
       });
       setIsEditing(false);
       Alert.alert('Success', 'Profile updated successfully');
+
+      // Refresh stats after profile update
+      await loadStats();
     } catch (error) {
       Alert.alert('Error', 'Failed to update profile');
     }
@@ -127,13 +189,21 @@ const ProfileScreen = ({ navigation }) => {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Avatar */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatar}>
-            <Icon name="person" size={24} color={theme.colors.accentPrimary} />
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <Icon name="time-outline" size={24} color="#999" />
+            <Text style={styles.loadingText}>Loading profile...</Text>
           </View>
-          <Text style={styles.userName}>{profile.name || 'Your Name'}</Text>
-          <Text style={styles.userEmail}>{profile.email || 'your.email@example.com'}</Text>
-        </View>
+        ) : (
+          <>
+            {/* Profile Avatar */}
+            <View style={styles.avatarSection}>
+              <View style={styles.avatar}>
+                <Icon name="person" size={24} color={theme.colors.accentPrimary} />
+              </View>
+              <Text style={styles.userName}>{profile.name || 'Your Name'}</Text>
+              <Text style={styles.userEmail}>{profile.email || 'your.email@example.com'}</Text>
+            </View>
 
         {/* Personal Information */}
         <View style={styles.section}>
@@ -216,11 +286,56 @@ const ProfileScreen = ({ navigation }) => {
                     text: 'Logout', 
                     style: 'destructive',
                     onPress: async () => {
-                      await authLogout();
-                      navigation.reset({
-                        index: 0,
-                        routes: [{ name: 'Login' }]
-                      });
+                      try {
+                        console.log('🚀 Starting logout process...');
+
+                        // Call logout functions individually with error handling
+                        try {
+                          console.log('🔄 Calling authLogout...');
+                          await authLogout();
+                          console.log('✅ authLogout completed successfully');
+                        } catch (authError) {
+                          console.error('❌ authLogout failed:', authError);
+                          Alert.alert('Logout Error', `Auth logout failed: ${authError.message}`);
+                          return; // Don't continue if auth logout fails
+                        }
+
+                        try {
+                          console.log('🔄 Calling userLogout...');
+                          await userLogout();
+                          console.log('✅ userLogout completed successfully');
+                        } catch (userError) {
+                          console.error('❌ userLogout failed:', userError);
+                          // This is less critical, so we'll continue even if userLogout fails
+                          console.warn('⚠️ User logout failed but continuing with navigation');
+                        }
+
+                        // Navigate to login screen after successful logout
+                        console.log('🎯 Navigating to Login screen...');
+
+                        try {
+                          // Try navigate first (simpler and more reliable)
+                          navigation.navigate('Login');
+                          console.log('✅ Navigate to Login completed');
+                        } catch (navError) {
+                          console.error('❌ Navigate failed:', navError);
+                          try {
+                            // Fallback to reset
+                            console.log('🔄 Trying navigation.reset...');
+                            navigation.reset({
+                              index: 0,
+                              routes: [{ name: 'Login' }]
+                            });
+                            console.log('✅ Reset completed');
+                          } catch (resetError) {
+                            console.error('❌ Reset also failed:', resetError);
+                            Alert.alert('Navigation Error', 'Failed to navigate to login screen');
+                          }
+                        }
+                      } catch (error) {
+                        console.error('💥 Unexpected logout error:', error);
+                        Alert.alert('Error', 'Failed to logout. Please try again.');
+                      }
                     }
                   }
                 ]
@@ -247,6 +362,8 @@ const ProfileScreen = ({ navigation }) => {
             <Icon name="chevron-forward" size={24} color="#E0E0E0" />
           </TouchableOpacity>
         </View>
+        </>
+        )}
       </ScrollView>
     </View>
   );
@@ -295,8 +412,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  content: {
+  loadingContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 50,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
   },
   avatarSection: {
     alignItems: 'center',
