@@ -7,7 +7,7 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { useHealthData } from '../../context/HealthDataContext';
 import AppHeader from '../../component/common/AppHeader';
 
@@ -170,7 +170,7 @@ const DashboardScreen = ({ navigation }) => {
     <View style={styles.healthCard} key={title}>
       <View style={[styles.statusDot, { backgroundColor: getStatusColor(data.status) }]} />
       <View style={styles.cardIconContainer}>
-        <Ionicons name={icon} size={24} color="#3498db" />
+        <Icon name={icon} size={24} color="#3498db" />
       </View>
       <Text style={styles.cardTitle}>{title}</Text>
       <Text style={styles.cardValue}>{data.value}</Text>
@@ -195,7 +195,7 @@ const DashboardScreen = ({ navigation }) => {
 
           {/* Journey Card */}
           <View style={styles.journeyCard}>
-            <Ionicons name="medical" size={48} color="#4caf50" />
+            <Icon name="medical" size={48} color="#4caf50" />
             <Text style={styles.journeyTitle}>Your Health Journey Starts Here</Text>
             <Text style={styles.journeySubtitle}>Monitor your vital signs and track your health metrics to maintain optimal wellness and achieve your health goals.</Text>
           </View>
@@ -226,7 +226,7 @@ const DashboardScreen = ({ navigation }) => {
             }}
           >
             <View style={styles.healthAlertContent}>
-              <Ionicons 
+              <Icon 
                 name={healthNotifications.length > 0 ? "warning" : "checkmark-circle"} 
                 size={20} 
                 color="#fff" 
@@ -237,7 +237,7 @@ const DashboardScreen = ({ navigation }) => {
                   : 'No Health Alerts - All Good!'}
               </Text>
               {healthNotifications.length > 0 && (
-                <Ionicons 
+                <Icon 
                   name={showNotifications ? 'chevron-up' : 'chevron-down'}
                   size={20}
                   color="#fff"
@@ -251,14 +251,14 @@ const DashboardScreen = ({ navigation }) => {
             <View style={styles.notificationPanel}>
               <View style={styles.notificationHeader}>
                 <View style={styles.notificationHeaderContent}>
-                  <Ionicons name="notifications" size={20} color="#fff" style={styles.notificationHeaderIcon} />
+                  <Icon name="notifications" size={20} color="#fff" style={styles.notificationHeaderIcon} />
                   <Text style={styles.notificationTitle}>Health Alerts</Text>
                 </View>
                 <TouchableOpacity 
                   style={styles.closeButton}
                   onPress={() => setShowNotifications(false)}
                 >
-                  <Ionicons name="close" size={20} color="#fff" />
+                  <Icon name="close" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
               <ScrollView style={styles.notificationScroll}>
@@ -278,7 +278,7 @@ const DashboardScreen = ({ navigation }) => {
                       styles.notificationIconContainer,
                       { backgroundColor: `${getStatusColor(notification.status)}20` }
                     ]}>
-                      <Ionicons 
+                      <Icon 
                         name={notification.status === 'warning' ? 'warning' : 'information-circle'}
                         size={20} 
                         color={getStatusColor(notification.status)}
@@ -287,10 +287,10 @@ const DashboardScreen = ({ navigation }) => {
                     <View style={styles.notificationItemContent}>
                       <Text style={styles.notificationText}>{notification.message}</Text>
                       <Text style={styles.notificationTime}>
-                        <Ionicons name="time-outline" size={12} color="#95a5a6" /> {notification.time}
+                        <Icon name="time-outline" size={12} color="#95a5a6" /> {notification.time}
                       </Text>
                     </View>
-                    <Ionicons 
+                    <Icon 
                       name={notification.isRead ? 'checkmark-circle' : 'ellipse-outline'}
                       size={20}
                       color={notification.isRead ? '#2ecc71' : '#bdc3c7'}
@@ -327,7 +327,7 @@ const DashboardScreen = ({ navigation }) => {
               style={styles.iconButton}
               onPress={handleAddHealthData}
             >
-              <Ionicons name="add-circle" size={24} color="#fff" style={styles.buttonIcon} />
+              <Icon name="add-circle" size={24} color="#fff" style={styles.buttonIcon} />
               <Text style={styles.iconButtonText}>Add Health Data</Text>
             </TouchableOpacity>
 
@@ -335,7 +335,7 @@ const DashboardScreen = ({ navigation }) => {
               style={[styles.iconButton, styles.dashboardButton]}
               onPress={handleViewDashboard}
             >
-              <Ionicons name="stats-chart" size={24} color="#fff" style={styles.buttonIcon} />
+              <Icon name="stats-chart" size={24} color="#fff" style={styles.buttonIcon} />
               <Text style={styles.iconButtonText}>Health History</Text>
             </TouchableOpacity>
 
@@ -343,7 +343,7 @@ const DashboardScreen = ({ navigation }) => {
               style={[styles.iconButton, styles.monitorButton]}
               onPress={handlemonitorhealth}
             >
-              <Ionicons name="pulse" size={24} color="#fff" style={styles.buttonIcon} />
+              <Icon name="pulse" size={24} color="#fff" style={styles.buttonIcon} />
               <Text style={styles.iconButtonText}>Monitor Health</Text>
             </TouchableOpacity>
           </View>

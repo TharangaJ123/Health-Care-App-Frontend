@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { healthStyles } from './styles/HealthMonitoringStyles';
 import { useHealthData } from '../../context/HealthDataContext';
 
@@ -208,7 +208,7 @@ const HealthDataInputScreen = ({ navigation }) => {
           style={healthStyles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#2c3e50" />
+          <Icon name="arrow-back" size={24} color="#2c3e50" />
         </TouchableOpacity>
         <Text style={healthStyles.headerTitle}>Add Health Data</Text>
         <View style={healthStyles.headerSpacer} />
@@ -342,7 +342,7 @@ const HealthDataInputScreen = ({ navigation }) => {
         <View style={healthStyles.modalOverlay}>
           <View style={healthStyles.modalContent}>
             <View style={[healthStyles.modalIcon, { backgroundColor: '#2ecc71' }]}>
-              <Ionicons name="checkmark" size={40} color="#fff" />
+              <Icon name="checkmark" size={40} color="#fff" />
             </View>
             <Text style={healthStyles.modalTitle}>Health Data Saved</Text>
             <Text style={healthStyles.modalText}>
@@ -368,7 +368,7 @@ const HealthDataInputScreen = ({ navigation }) => {
         <View style={healthStyles.modalOverlay}>
           <View style={healthStyles.modalContent}>
             <View style={[healthStyles.modalIcon, { backgroundColor: '#e74c3c' }]}>
-              <Ionicons name="alert-circle" size={40} color="#fff" />
+              <Icon name="alert-circle" size={40} color="#fff" />
             </View>
             <Text style={healthStyles.modalTitle}>{errorMessage.title}</Text>
             <Text style={healthStyles.modalText}>

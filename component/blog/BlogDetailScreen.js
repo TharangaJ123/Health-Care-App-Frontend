@@ -13,7 +13,7 @@ import {
   Modal,
   ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../common/Icon';
 import { apiFetch } from '../../config/api';
 
 const CATEGORY_COVERS = {
@@ -42,7 +42,7 @@ const BlogDetailScreen = ({ post, onGoBack }) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#FF3B30" />
+          <Icon name="alert-circle-outline" size={64} color="#FF3B30" />
           <Text style={styles.errorText}>Article not found</Text>
           <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
             <Text style={styles.backButtonText}>Go Back</Text>
@@ -170,19 +170,19 @@ const BlogDetailScreen = ({ post, onGoBack }) => {
           style={styles.backButton}
           onPress={handleBackPress}
         >
-          <Ionicons name="chevron-back" size={24} color="#333" />
+          <Icon name="chevron-back" size={24} color="#333" />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton} onPress={handleBookmark}>
-            <Ionicons 
+            <Icon 
               name={isBookmarked ? "bookmark" : "bookmark-outline"} 
               size={24} 
               color={isBookmarked ? "#007AFF" : "#333"} 
             />
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton} onPress={handleShare}>
-            <Ionicons name="share-outline" size={24} color="#333" />
+            <Icon name="share-outline" size={24} color="#333" />
           </TouchableOpacity>
         </View>
       </View>
@@ -243,7 +243,7 @@ const BlogDetailScreen = ({ post, onGoBack }) => {
           <View style={styles.actionButtons}>
 
             <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
-              <Ionicons 
+              <Icon 
                 name={isLiked ? "heart" : "heart-outline"} 
                 size={24} 
                 color={isLiked ? "#FF3B30" : "#666"} 
@@ -254,12 +254,12 @@ const BlogDetailScreen = ({ post, onGoBack }) => {
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-              <Ionicons name="share-outline" size={24} color="#666" />
+              <Icon name="share-outline" size={24} color="#666" />
               <Text style={styles.actionText}>Share</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionButton} onPress={handleSummarize}>
-              <Ionicons name="bulb-outline" size={24} color="#666" />
+              <Icon name="bulb-outline" size={24} color="#666" />
               <Text style={styles.actionText}>AI Summary</Text>
             </TouchableOpacity>
           </View>

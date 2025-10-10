@@ -13,7 +13,7 @@ import {
   Platform,
   Switch,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../common/Icon';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { apiFetch } from '../../config/api';
 import { useUser } from '../../context/UserContext';
@@ -227,7 +227,7 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
           style={styles.backButton}
           onPress={onGoBack}
         >
-          <Ionicons name="chevron-back" size={24} color="#333" />
+          <Icon name="chevron-back" size={24} color="#333" />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add New Goal</Text>
@@ -269,24 +269,24 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
                     onPress={() => handleApplySuggestion(s)}
                   >
                     <View style={styles.suggestionIconWrap}>
-                      <Ionicons name="sparkles-outline" size={18} color="#7C3AED" />
+                      <Icon name="sparkles-outline" size={18} color="#7C3AED" />
                     </View>
                     <View style={styles.suggestionContent}>
                       <Text style={styles.suggestionTitle}>{s.title}</Text>
                       <Text style={styles.suggestionDesc}>{s.description}</Text>
                       <View style={styles.suggestionMetaRow}>
                         <View style={styles.metaPill}>
-                          <Ionicons name="time-outline" size={14} color="#666" />
+                          <Icon name="time-outline" size={14} color="#666" />
                           <Text style={styles.metaText}>{s.time || 'Anytime'}</Text>
                         </View>
                         <View style={[styles.metaPill, { marginLeft: 8 }]}>
-                          <Ionicons name="flag-outline" size={14} color="#666" />
+                          <Icon name="flag-outline" size={14} color="#666" />
                           <Text style={styles.metaText}>{(s.priority || 'medium').toUpperCase()}</Text>
                         </View>
                       </View>
                     </View>
                     <View style={styles.useButton}>
-                      <Ionicons name="add" size={18} color="#fff" />
+                      <Icon name="add" size={18} color="#fff" />
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -308,7 +308,7 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
                   ]}
                   onPress={() => handleInputChange('type', type.id)}
                 >
-                  <Ionicons 
+                  <Icon 
                     name={type.icon} 
                     size={24} 
                     color={formData.type === type.id ? '#fff' : type.color} 
@@ -374,7 +374,7 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
                   style={styles.pickerButton}
                   onPress={() => setShowDatePicker(true)}
                 >
-                  <Ionicons name="calendar-outline" size={20} color="#666" />
+                  <Icon name="calendar-outline" size={20} color="#666" />
                   <Text style={styles.pickerText}>
                     {formatDate(formData.date)}
                   </Text>
@@ -388,7 +388,7 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
                   style={styles.pickerButton}
                   onPress={() => setShowTimePicker(true)}
                 >
-                  <Ionicons name="time-outline" size={20} color="#666" />
+                  <Icon name="time-outline" size={20} color="#666" />
                   <Text style={styles.pickerText}>
                     {formatTime(formData.time)}
                   </Text>
@@ -439,7 +439,7 @@ const AddGoalScreen = ({ onGoBack, onAddGoal }) => {
               style={styles.submitButton}
               onPress={handleSubmit}
             >
-              <Ionicons name="checkmark" size={20} color="#fff" />
+              <Icon name="checkmark" size={20} color="#fff" />
               <Text style={styles.submitButtonText}>Add Goal</Text>
             </TouchableOpacity>
           </View>

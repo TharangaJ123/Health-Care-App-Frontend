@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 
 const fmt = (iso) => {
   if (!iso) return '';
@@ -30,7 +30,7 @@ const GoalTimeline = ({ steps = [], startDate, onToggleStep }) => {
         <Text style={styles.fallbackTitle}>Roadmap</Text>
         {steps.sort((a,b)=>(a.order||0)-(b.order||0)).map((s, idx) => (
           <View key={String(s.id || idx)} style={styles.fallbackItem}>
-            <Ionicons name={s.completed ? 'checkmark-circle' : 'radio-button-off'} size={18} color={s.completed ? '#34C759' : '#C7C7CC'} />
+            <Icon name={s.completed ? 'checkmark-circle' : 'radio-button-off'} size={18} color={s.completed ? '#34C759' : '#C7C7CC'} />
             <Text style={[styles.fallbackText, s.completed && { textDecorationLine: 'line-through', color: '#8E8E93' }]}>
               {s.title}
             </Text>
@@ -63,7 +63,7 @@ const GoalTimeline = ({ steps = [], startDate, onToggleStep }) => {
                     onPress={() => onToggleStep && onToggleStep(s.id)}
                     style={[styles.bullet, s.completed && styles.bulletDone, locked && styles.bulletLocked]}
                   >
-                    <Ionicons name={s.completed ? 'checkmark' : 'ellipse-outline'} size={12} color={s.completed ? '#fff' : locked ? '#C7CAD1' : '#6B7280'} />
+                    <Icon name={s.completed ? 'checkmark' : 'ellipse-outline'} size={12} color={s.completed ? '#fff' : locked ? '#C7CAD1' : '#6B7280'} />
                   </TouchableOpacity>
                   {idx !== arr.length - 1 ? <View style={styles.connector} /> : <View style={{ height: 10 }} />}
                 </View>
@@ -76,11 +76,11 @@ const GoalTimeline = ({ steps = [], startDate, onToggleStep }) => {
                 >
                   <View style={styles.cardHeader}>
                     <View style={styles.badgeDate}>
-                      <Ionicons name="calendar-outline" size={14} color="#2563EB" />
+                      <Icon name="calendar-outline" size={14} color="#2563EB" />
                       <Text style={styles.badgeDateText}>{fmt(start)} → {fmt(due)}</Text>
                     </View>
                     <View style={styles.badgeDur}>
-                      <Ionicons name="time-outline" size={14} color="#0EA5E9" />
+                      <Icon name="time-outline" size={14} color="#0EA5E9" />
                       <Text style={styles.badgeDurText}>{duration} day{duration>1?'s':''}</Text>
                     </View>
                   </View>

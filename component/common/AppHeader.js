@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from './Icon';
 
 const AppHeader = ({
   title,
@@ -17,7 +17,7 @@ const AppHeader = ({
       <View style={styles.leftSection}>
         {onBack ? (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Ionicons name="chevron-back" size={24} color="#333" />
+            <Icon name="chevron-back" size={24} color="#333" />
             <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
         ) : null}
@@ -30,7 +30,7 @@ const AppHeader = ({
       <View style={styles.actions}>
         {rightIconName ? (
           <TouchableOpacity style={styles.headerButton} onPress={onRightPress} activeOpacity={0.8}>
-            <Ionicons name={rightIconName} size={28} color={rightIconColor} />
+            <Icon name={rightIconName} size={28} color={rightIconColor} />
           </TouchableOpacity>
         ) : null}
       </View>

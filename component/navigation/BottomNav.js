@@ -7,8 +7,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { House, Flag, Plus, Newspaper, User as UserIcon,PersonArmsSpread } from 'phosphor-react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -17,48 +16,39 @@ const BottomNav = ({ activeTab, onTabPress }) => {
     {
       id: 'home',
       label: 'Home',
-      iconName: 'home-outline',
-      iconSet: 'Ionicons',
+      icon: House,
     },
     {
       id: 'goal',
       label: 'Goals',
-      iconName: 'flag-outline',
-      iconSet: 'Ionicons',
+      icon: Flag,
     },
     {
       id: 'add',
       label: 'Dashboard',
-      iconName: 'add',
-      iconSet: 'Ionicons',
+      icon: PersonArmsSpread,
       isCenter: true,
     },
     {
       id: 'blog',
       label: 'Blog',
-      iconName: 'newspaper-outline',
-      iconSet: 'Ionicons',
+      icon: Newspaper,
     },
     {
       id: 'profile',
       label: 'Profile',
-      iconName: 'person-outline',
-      iconSet: 'Ionicons',
+      icon: UserIcon,
     },
   ];
 
   const renderIcon = (tab) => {
-    const IconComponent = tab.iconSet === 'Ionicons' ? Ionicons : MaterialIcons;
+    const IconComponent = tab.icon;
     const isActive = activeTab === tab.id;
     const color = isActive ? '#FFD166' : '#FFFFFF';
     const size = tab.isCenter ? 28 : 24;
 
     return (
-      <IconComponent
-        name={tab.iconName}
-        size={size}
-        color={color}
-      />
+      <IconComponent size={size} color={color} weight={isActive ? 'fill' : 'regular'} />
     );
   };
 

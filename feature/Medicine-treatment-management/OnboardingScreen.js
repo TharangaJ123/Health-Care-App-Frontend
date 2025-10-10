@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { useFocusEffect } from '@react-navigation/native';
 import { theme } from '../../utils/theme';
 
@@ -158,7 +158,7 @@ const OnboardingScreen = ({ navigation }) => {
             </View>
             
             <View style={styles.iconCircle}>
-              <Ionicons 
+              <Icon 
                 name={item.icon} 
                 size={40} 
                 color="white" 
@@ -211,7 +211,7 @@ const OnboardingScreen = ({ navigation }) => {
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 1 }}
                         >
-                          <Ionicons 
+                          <Icon 
                             name={
                               index === 0 ? "heart" : 
                               index === 1 ? "alarm-outline" : 
@@ -241,7 +241,7 @@ const OnboardingScreen = ({ navigation }) => {
                     </View>
                     
                     <View style={styles.iconCircle}>
-                      <Ionicons 
+                      <Icon 
                         name={item.icon} 
                         size={40} 
                         color={theme.colors.white} 
@@ -302,7 +302,7 @@ const OnboardingScreen = ({ navigation }) => {
             <Text style={styles.nextTextBlue}>
               {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Next'}
             </Text>
-            <Ionicons 
+            <Icon 
               name="arrow-forward" 
               size={20} 
               color="#FFFFFF" 
