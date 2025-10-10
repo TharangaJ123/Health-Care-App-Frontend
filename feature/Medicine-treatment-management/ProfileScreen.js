@@ -15,7 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import StorageService from '../../services/StorageService';
 import { getMedications, getWeeklyAdherence, getMonthlyAdherence } from '../../utils/storage';
 import { theme } from '../../utils/theme';
-import Header from '../Header';
+import ScreenHeader from '../../component/common/ScreenHeader';
 
 const ProfileScreen = ({ navigation }) => {
   const { user, updateUser, logout: userLogout } = useUser();
@@ -170,7 +170,7 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header 
+      <ScreenHeader 
         title="Profile" 
         onBack={() => navigation.goBack()}
         rightIcon={

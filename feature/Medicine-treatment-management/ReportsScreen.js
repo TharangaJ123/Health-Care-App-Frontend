@@ -17,7 +17,7 @@ import { getAdherenceStats as getAdherenceStatsSchedule, getMedications as getMe
 import { generateAdherenceReport, shareReport } from '../../utils/reportGenerator';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import Header from '../Header';
+import ScreenHeader from '../../component/common/ScreenHeader';
 import * as MediaLibrary from 'expo-media-library';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Print from 'expo-print';
@@ -545,7 +545,7 @@ const ReportsScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header 
+      <ScreenHeader 
         title="Adherence Reports" 
         onBack={() => navigation.goBack()}
       />

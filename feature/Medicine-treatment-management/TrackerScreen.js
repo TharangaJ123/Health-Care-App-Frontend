@@ -5,7 +5,7 @@ import Icon from '../../component/common/Icon';
 import { theme } from '../../utils/theme';
 import { getSchedule, getWeeklyAdherence, getAdherenceStats } from '../../utils/storage';
 import { useFocusEffect } from '@react-navigation/native';
-import Header from '../Header';
+import ScreenHeader from '../../component/common/ScreenHeader';
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
@@ -92,8 +92,8 @@ export default function TrackerScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header 
-        title="Medication Tracker" 
+      <ScreenHeader 
+        title="Medi Tracker" 
         onBack={() => navigation.goBack()}
         rightIcon={
           <TouchableOpacity style={styles.headerActionBtn} onPress={() => navigation.navigate('Reports')}>

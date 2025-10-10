@@ -111,10 +111,8 @@ const CreateBlogScreen = ({ onCreated, onCancel, initial, onUpdated }) => {
         <TouchableOpacity style={styles.headerLeft} onPress={onCancel}>
           <Icon name="chevron-back" size={24} color="#000000ff" />
           <Text style={styles.backText}>Back</Text>
+          <Text style={styles.headerTitle}>   Create Your Story</Text>
         </TouchableOpacity>
-        <View>
-          <Text style={styles.headerTitle}>Create Your Story</Text>
-        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -214,7 +212,7 @@ const styles = StyleSheet.create({
     marginTop:25
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1a1a1a',
   },
