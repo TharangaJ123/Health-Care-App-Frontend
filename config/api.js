@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Use device-friendly localhost by default
 const DEFAULT_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || `http://${DEFAULT_HOST}:5000`;
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || `https://sample-production-6d27.up.railway.app`;
 
 export async function apiFetch(path, options = {}) {
   const url = `${API_BASE_URL}${path}`;
