@@ -8,7 +8,7 @@ import Icon from '../../component/common/Icon';
 import { useAuth } from '../../context/AuthContext';
 
 // Adjust per environment: iOS sim localhost, Android emulator 10.0.2.2, real device LAN IP
-const API_BASE = 'http://192.168.8.190:5000';
+const API_BASE = 'https://sample-production-6d27.up.railway.app';
 
 function MyAppointmentsScreen({ navigation }) {
   const [appointments, setAppointments] = useState([]);
@@ -119,7 +119,7 @@ function MyAppointmentsScreen({ navigation }) {
       <AppHeader
         title="My Appointments"
         subtitle="View and manage your bookings"
-        rightIconName="add"
+        rightIconName="add-circle-outline"
         onRightPress={() => navigation?.navigate?.('DoctorAppointment')}
         onBack={() => navigation?.goBack?.()}
       />

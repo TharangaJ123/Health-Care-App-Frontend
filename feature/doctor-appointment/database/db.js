@@ -9,10 +9,10 @@ const getBaseUrl = () => {
   // Defaults by platform/runtime
   if (Platform.OS === 'android') {
     // Android emulator maps host loopback to 10.0.2.2
-    return 'http://10.0.2.2:5000';
+    return 'https://sample-production-6d27.up.railway.app';
   }
   // iOS simulator and web fallback
-  return 'http://localhost:5000';
+  return 'https://sample-production-6d27.up.railway.app';
 };
 
 const apiFetch = async (path, options = {}) => {

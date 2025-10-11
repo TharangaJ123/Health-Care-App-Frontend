@@ -60,7 +60,12 @@ import {
   CloudArrowUp,
   SignOut,
   SpeakerHigh,
-  DeviceMobile
+  DeviceMobile,
+  Robot,
+  Bicycle,
+  BowlSteam,
+  PaperPlaneRight,
+  SkipForward
 } from 'phosphor-react-native';
 
 // Map common Ionicons names used in the app to Phosphor components
@@ -131,16 +136,18 @@ const ionToPhosphor = {
   'share-outline': ShareNetwork,
   'analytics-outline': ChartLineUp,
   'analytics': ChartLineUp,
+  'chatbubble-ellipses-outline':PaperPlaneRight,
   // Goal tracker specific
-  'fitness-outline': Activity,
+  'fitness-outline': Bicycle,
   'brain-outline': Brain,
   'nutrition-outline': ForkKnife,
   'moon-outline': Moon,
   'people-outline': UsersThree,
   'flag-outline': Flag,
   'rocket-outline': Rocket,
-  'sparkles-outline': Stars,
+  'sparkles-outline': Robot,
   'happy-outline': Smiley,
+  'restaurant-outline':BowlSteam,
   'add': Plus,
   // Profile screen specific
   'chevron-forward': CaretRight,
@@ -153,7 +160,7 @@ const ionToPhosphor = {
   // Reminders screen specific
   'volume-high': SpeakerHigh,
   'phone-portrait': DeviceMobile,
-  
+  'arrow-forward':SkipForward,
 };
 
 const Fallback = Info;
