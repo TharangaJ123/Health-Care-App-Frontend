@@ -63,7 +63,9 @@ import {
   DeviceMobile,
   Robot,
   Bicycle,
-  BowlSteam
+  BowlSteam,
+  PaperPlaneRight,
+  SkipForward
 } from 'phosphor-react-native';
 
 // Map common Ionicons names used in the app to Phosphor components
@@ -134,6 +136,7 @@ const ionToPhosphor = {
   'share-outline': ShareNetwork,
   'analytics-outline': ChartLineUp,
   'analytics': ChartLineUp,
+  'chatbubble-ellipses-outline':PaperPlaneRight,
   // Goal tracker specific
   'fitness-outline': Bicycle,
   'brain-outline': Brain,
@@ -157,7 +160,7 @@ const ionToPhosphor = {
   // Reminders screen specific
   'volume-high': SpeakerHigh,
   'phone-portrait': DeviceMobile,
-  
+  'arrow-forward':SkipForward,
 };
 
 const Fallback = Info;

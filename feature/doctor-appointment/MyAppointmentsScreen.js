@@ -119,7 +119,7 @@ function MyAppointmentsScreen({ navigation }) {
       <AppHeader
         title="My Appointments"
         subtitle="View and manage your bookings"
-        rightIconName="add"
+        rightIconName="add-circle-outline"
         onRightPress={() => navigation?.navigate?.('DoctorAppointment')}
         onBack={() => navigation?.goBack?.()}
       />
