@@ -16,6 +16,7 @@ import {
   Feather, 
   MaterialCommunityIcons 
 } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Calendar } from 'react-native-calendars';
 import * as storage from '../../utils/storage';
@@ -197,7 +198,7 @@ const HomeScreen = () => {
       <View style={styles.medicationHeader}>
         <View style={styles.medicationInfo}>
           <View style={styles.medicationIconContainer}>
-            <MaterialCommunityIcons name="pill" size={24} color="#2563EB" />
+            <Icon name="pill" size={24} color="#2563EB" />
           </View>
           <View>
             <Text style={styles.medicationName}>{item.name}</Text>
@@ -223,7 +224,7 @@ const HomeScreen = () => {
             </View>
           ) : null}
           <TouchableOpacity style={{ marginLeft: 8 }} onPress={() => navigation.navigate('EditMedication', { medicationId: item.medicationId })}>
-            <Feather name="edit-2" size={20} color="#6B7280" />
+            <Icon name="edit-2" size={20} color="#6B7280" />
           </TouchableOpacity>
         </View>
       </View>
@@ -237,7 +238,7 @@ const HomeScreen = () => {
           onPress={() => handleStatusUpdate(item.id, 'taken')}
           disabled={item.status === 'taken'}
         >
-          <Feather name="check" size={16} color="#fff" />
+          <Icon name="checkmark" size={16} color="#fff" />
           <Text style={styles.actionButtonText}>Taken</Text>
         </TouchableOpacity>
         <TouchableOpacity 
@@ -249,7 +250,7 @@ const HomeScreen = () => {
           onPress={() => handleStatusUpdate(item.id, 'missed')}
           disabled={item.status === 'missed'}
         >
-          <Feather name="x" size={16} color="#fff" />
+          <Icon name="close-circle" size={16} color="#fff" />
           <Text style={styles.actionButtonText}>Missed</Text>
         </TouchableOpacity>
         <TouchableOpacity 
@@ -261,7 +262,7 @@ const HomeScreen = () => {
           onPress={() => handleStatusUpdate(item.id, 'skipped')}
           disabled={item.status === 'skipped'}
         >
-          <Feather name="skip-forward" size={16} color="#fff" />
+          <Icon name="skip-forward" size={16} color="#fff" />
           <Text style={styles.actionButtonText}>Skip</Text>
         </TouchableOpacity>
       </View>
@@ -286,7 +287,7 @@ const HomeScreen = () => {
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
           <View style={styles.profileIcon}>
-            <Ionicons name="person-outline" size={24} color="#2563EB" />
+            <Icon name="person" size={24} color="#2563EB" />
           </View>
         </TouchableOpacity>
       </View>
@@ -341,7 +342,7 @@ const HomeScreen = () => {
                 
           </View>
           <Text style={styles.deleteHint}>⚡ Long press to delete           <TouchableOpacity style={styles.addMedicineButton} onPress={() => navigation.navigate('AddMedication')}>
-                  <Feather name="plus" size={16} color="#fff" />
+                  <Icon name="plus" size={16} color="#fff" />
                   <Text style={styles.addMedicineButtonText}>Add Medicine</Text>
               </TouchableOpacity></Text>
           
@@ -367,7 +368,7 @@ const HomeScreen = () => {
               onPress={() => navigation.navigate('Tracker')}
             >
               <View style={[styles.quickActionIcon, {backgroundColor: '#3B82F6'}]}>
-                <Feather name="trending-up" size={24} color="#fff" />
+                <Icon name="trending-up" size={24} color="#fff" />
               </View>
               <Text style={styles.quickActionText}>PillTrack</Text>
             </TouchableOpacity>
@@ -375,7 +376,7 @@ const HomeScreen = () => {
             {/* Goal */}
             <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Main', { tab: 'goal' })}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#8B5CF6'}]}>
-                <Feather name="target" size={24} color="#fff" />
+                <Icon name="target" size={24} color="#fff" />
               </View>
               <Text style={styles.quickActionText}>Goal</Text>
             </TouchableOpacity>
@@ -383,7 +384,7 @@ const HomeScreen = () => {
             {/* Blog */}
             <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Main', { tab: 'blog' })}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#6B7280'}]}>
-                <Feather name="file-text" size={24} color="#fff" />
+                <Icon name="article" size={24} color="#fff" />
               </View>
               <Text style={styles.quickActionText}>Blog</Text>
             </TouchableOpacity>
@@ -391,7 +392,7 @@ const HomeScreen = () => {
             {/* Community */}
             <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('Community')}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#F59E0B'}]}>
-                <Feather name="users" size={24} color="#fff" />
+                <Icon name="community" size={24} color="#fff" />
               </View>
               <Text style={styles.quickActionText}>Community</Text>
             </TouchableOpacity>
@@ -399,7 +400,7 @@ const HomeScreen = () => {
             {/* Appointment */}
             <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate('MyAppointments')}>
               <View style={[styles.quickActionIcon, {backgroundColor: '#EC4899'}]}>
-                <Feather name="calendar" size={24} color="#fff" />
+                <Icon name="calendar" size={24} color="#fff" />
               </View>
               <Text style={styles.quickActionText}>Appointment</Text>
             </TouchableOpacity>

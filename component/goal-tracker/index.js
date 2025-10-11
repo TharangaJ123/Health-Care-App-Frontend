@@ -10,7 +10,7 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { Calendar } from 'react-native-calendars';
 import { apiFetch } from '../../config/api';
 import { useUser } from '../../context/UserContext';
@@ -194,7 +194,7 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
           styles.typeIndicator,
           { backgroundColor: getTypeColor(item.type) }
         ]}>
-          <Ionicons 
+          <Icon 
             name={getTypeIcon(item.type)} 
             size={20} 
             color="#fff" 
@@ -222,14 +222,14 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
           
           <View style={styles.goalMeta}>
             <View style={styles.timeBadge}>
-              <Ionicons name="time-outline" size={14} color="#666" />
+              <Icon name="time-outline" size={14} color="#666" />
               <Text style={styles.timeText}>{item.time}</Text>
             </View>
             <Text style={styles.typeText}>{item.type}</Text>
           </View>
         </View>
         <View style={styles.actionIcons}>
-          <Ionicons 
+          <Icon 
             name={item.completed ? 'checkmark-circle' : 'ellipse-outline'} 
             size={28} 
             color={item.completed ? '#4CD964' : '#C7C7CC'} 
@@ -242,7 +242,7 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
               openActions(item);
             }}
           >
-            <Ionicons name="ellipsis-vertical" size={18} color="#666" />
+            <Icon name="ellipsis-vertical" size={18} color="#666" />
           </TouchableOpacity>
         </View>
       </View>
@@ -265,7 +265,7 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
               <Text style={styles.modalSubtitle}>Choose an action</Text>
             </View>
             <TouchableOpacity style={[styles.modalButton, styles.modalDelete]} onPress={confirmDeleteGoal}>
-              <Ionicons name="trash-outline" size={18} color="#fff" />
+              <Icon name="trash-outline" size={18} color="#fff" />
               <Text style={styles.modalDeleteText}>Delete Goal</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.modalButton, styles.modalCancel]} onPress={closeActions}>
@@ -362,7 +362,7 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
             />
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="calendar-outline" size={80} color="#E5E7EB" />
+              <Icon name="calendar-outline" size={80} color="#E5E7EB" />
               <Text style={styles.emptyStateTitle}>No goals for this date</Text>
               <Text style={styles.emptyStateText}>
                 {selectedDate === new Date().toISOString().split('T')[0]
@@ -370,7 +370,7 @@ const CalendarGoalsScreen = ({ onNavigateToAddGoal, onNavigateToGoalDetail, refr
                   : 'No goals scheduled for this date.'}
               </Text>
               <TouchableOpacity style={styles.addButton} onPress={onNavigateToAddGoal}>
-                <Ionicons name="add" size={20} color="#fff" />
+                <Icon name="add" size={20} color="#fff" />
                 <Text style={styles.addButtonText}>Add Goal</Text>
               </TouchableOpacity>
             </View>

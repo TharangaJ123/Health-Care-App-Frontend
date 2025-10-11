@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ArrowLeft } from 'phosphor-react-native';
 
 const Header = ({ title, onBack, rightIcon }) => {
   return (
@@ -9,7 +9,7 @@ const Header = ({ title, onBack, rightIcon }) => {
         <View style={styles.headerLeft}>
           {onBack && (
             <TouchableOpacity onPress={onBack} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+              <ArrowLeft size={24} color="#FFFFFF" weight="bold" />
             </TouchableOpacity>
           )}
           <Text style={styles.headerTitle}>{title}</Text>

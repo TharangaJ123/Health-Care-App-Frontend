@@ -13,7 +13,7 @@ import {
   Animated
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { useHealthData } from '../../context/HealthDataContext';
 
 const { width } = Dimensions.get('window');
@@ -514,9 +514,9 @@ const glucoseChartData = chartData.glucose;
           </View>
           <View style={styles.chartValueContainer}>
             <View style={styles.trendIndicator}>
-              {trend === 'up' && <Ionicons name="arrow-up" size={16} color="#FF3D71" />}
-              {trend === 'down' && <Ionicons name="arrow-down" size={16} color="#00E096" />}
-              {trend === 'stable' && <Ionicons name="remove" size={16} color="#8F9BB3" />}
+              {trend === 'up' && <Icon name="arrow-up" size={16} color="#FF3D71" />}
+              {trend === 'down' && <Icon name="arrow-down" size={16} color="#00E096" />}
+              {trend === 'stable' && <Icon name="remove" size={16} color="#8F9BB3" />}
             </View>
             <Text style={[styles.chartValue, { color: lineColor }]}>
               {formattedValue}
@@ -631,7 +631,7 @@ const glucoseChartData = chartData.glucose;
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#2c3e50" />
+            <Icon name="arrow-back" size={24} color="#2c3e50" />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Health Monitor</Text>
@@ -641,17 +641,17 @@ const glucoseChartData = chartData.glucose;
         <View style={styles.timerContainer}>
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Ionicons name="pulse" size={14} color="#FF3D71" />
+              <Icon name="pulse" size={14} color="#FF3D71" />
               <Text style={[styles.statText, { color: '#FF3D71' }]}>{heartRate} BPM</Text>
             </View>
             <View style={styles.statItem}>
-              <Ionicons name="speedometer" size={14} color="#00E5FF" />
+              <Icon name="speedometer" size={14} color="#00E5FF" />
               <Text style={[styles.statText, { color: '#00E5FF' }]}>
                 {bloodPressure.systolic}/{bloodPressure.diastolic}
               </Text>
             </View>
             <View style={styles.statItem}>
-              <Ionicons name="water" size={14} color="#00E5FF" />
+              <Icon name="water" size={14} color="#00E5FF" />
               <Text style={[styles.statText, { color: '#00E5FF' }]}>{oxygenLevel}%</Text>
             </View>
           </View>

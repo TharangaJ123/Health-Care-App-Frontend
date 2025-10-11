@@ -12,9 +12,11 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../common/Icon';
 import { apiFetch } from '../../config/api';
+import { useUser } from '../../context/UserContext';
 
 const CATEGORY_COVERS = {
   'Daily Med Tips': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1200',
@@ -31,18 +33,25 @@ function getCategoryCover(category) {
 }
 
 const BlogDetailScreen = ({ post, onGoBack }) => {
+  const { user } = useUser();
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [likesCount, setLikesCount] = useState(post?.likes || 0);
   const [summaryVisible, setSummaryVisible] = useState(false);
   const [summaryText, setSummaryText] = useState('');
   const [summarizing, setSummarizing] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [showCommentBox, setShowCommentBox] = useState(false);
+  const currentUserId = (user?.id || user?.uid || user?.email || '').toString();
+  const currentUserName = user?.name || user?.displayName || user?.email || 'User';
 
   if (!post) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#FF3B30" />
+          <Icon name="alert-circle-outline" size={64} color="#FF3B30" />
           <Text style={styles.errorText}>Article not found</Text>
           <TouchableOpacity style={styles.backButton} onPress={onGoBack}>
             <Text style={styles.backButtonText}>Go Back</Text>
@@ -63,9 +72,66 @@ const BlogDetailScreen = ({ post, onGoBack }) => {
     }
   };
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
+  const loadComments = async () => {
+    if (!post?.id) return;
+    try {
+      setLoadingComments(true);
+      const list = await apiFetch(`/api/blogs/${encodeURIComponent(post.id)}/comments`, { method: 'GET' });
+      setComments(Array.isArray(list) ? list : []);
+    } catch (e) {
+      // silent fail to avoid interrupting reading
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const submitComment = async () => {
+    const text = commentText.trim();
+    if (!text) return;
+    if (!currentUserId) {
+      Alert.alert('Login required', 'Please login to comment');
+      return;
+    }
+    try {
+      const saved = await apiFetch(`/api/blogs/${encodeURIComponent(post.id)}/comments`, {
+        method: 'POST',
+        body: { text, userId: currentUserId, userName: currentUserName },
+      });
+      setComments((prev) => [...prev, saved]);
+      setCommentText('');
+      setShowCommentBox(false);
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Failed to add comment');
+    }
+  };
+
+  React.useEffect(() => {
+    // Initialize likes state if post.likes is an array
+    if (Array.isArray(post?.likes)) {
+      setLikesCount(post.likes.length);
+      setIsLiked(post.likes.includes(currentUserId));
+    }
+    loadComments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post?.id, currentUserId]);
+
+  const handleLike = async () => {
+    if (!post?.id) return;
+    if (!currentUserId) {
+      Alert.alert('Login required', 'Please login to like this post');
+      return;
+    }
+    try {
+      const resp = await apiFetch(`/api/blogs/${encodeURIComponent(post.id)}/like`, {
+        method: 'POST',
+        body: { userId: currentUserId },
+      });
+      const likes = Array.isArray(resp?.likes) ? resp.likes : [];
+      setLikesCount(likes.length);
+      setIsLiked(likes.includes(currentUserId));
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Failed to like');
+    }
   };
 
   const handleBookmark = () => {
@@ -170,19 +236,19 @@ const BlogDetailScreen = ({ post, onGoBack }) => {
           style={styles.backButton}
           onPress={handleBackPress}
         >
-          <Ionicons name="chevron-back" size={24} color="#333" />
+          <Icon name="chevron-back" size={24} color="#333" />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton} onPress={handleBookmark}>
-            <Ionicons 
+            <Icon 
               name={isBookmarked ? "bookmark" : "bookmark-outline"} 
               size={24} 
               color={isBookmarked ? "#007AFF" : "#333"} 
             />
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton} onPress={handleShare}>
-            <Ionicons name="share-outline" size={24} color="#333" />
+            <Icon name="share-outline" size={24} color="#333" />
           </TouchableOpacity>
         </View>
       </View>
@@ -243,7 +309,7 @@ const BlogDetailScreen = ({ post, onGoBack }) => {
           <View style={styles.actionButtons}>
 
             <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
-              <Ionicons 
+              <Icon 
                 name={isLiked ? "heart" : "heart-outline"} 
                 size={24} 
                 color={isLiked ? "#FF3B30" : "#666"} 
@@ -254,14 +320,68 @@ const BlogDetailScreen = ({ post, onGoBack }) => {
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-              <Ionicons name="share-outline" size={24} color="#666" />
+              <Icon name="share-outline" size={24} color="#666" />
               <Text style={styles.actionText}>Share</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionButton} onPress={handleSummarize}>
-              <Ionicons name="bulb-outline" size={24} color="#666" />
+              <Icon name="bulb-outline" size={24} color="#666" />
               <Text style={styles.actionText}>AI Summary</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Comments Section */}
+          <View style={styles.commentsSection}>
+            <Text style={styles.commentsTitle}>Comments</Text>
+            {loadingComments ? (
+              <View style={{ paddingVertical: 12 }}>
+                <ActivityIndicator color="#007AFF" />
+              </View>
+            ) : comments.length === 0 ? (
+              <Text style={styles.commentsEmpty}>No comments yet. Be the first to comment.</Text>
+            ) : (
+              comments.map((c) => (
+                <View key={c.id} style={styles.commentItem}>
+                  <View style={styles.commentAvatar}>
+                    <Text style={styles.commentAvatarText}>{(c.userName || 'U').charAt(0)}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.commentMeta}>
+                      <Text style={styles.commentAuthor}>{c.userName || 'User'}</Text>
+                      <Text> • {new Date(c.createdAt).toLocaleString()}</Text>
+                    </Text>
+                    <Text style={styles.commentText}>{c.text}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+            {/* Toggleable comment composer */}
+            {!showCommentBox ? (
+              <TouchableOpacity style={styles.postCommentButton} onPress={() => setShowCommentBox(true)}>
+                <Icon name="chatbubble-ellipses-outline" size={18} color="#fff" />
+                <Text style={styles.postCommentText}>Post Comment</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.addCommentBox}>
+                <TextInput
+                  value={commentText}
+                  onChangeText={setCommentText}
+                  placeholder="Write a comment..."
+                  style={styles.commentInput}
+                  multiline
+                  autoFocus
+                />
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+                  <TouchableOpacity style={[styles.commentSend, { backgroundColor: '#9E9E9E' }]} onPress={() => { setShowCommentBox(false); setCommentText(''); }}>
+                    <Text style={styles.commentSendText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.commentSend} onPress={submitComment}>
+                    <Icon name="send" size={18} color="#fff" />
+                    <Text style={styles.commentSendText}>Post</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
         </View>
 
@@ -609,6 +729,118 @@ const styles = StyleSheet.create({
   modalHint: {
     color: '#666',
     marginTop: 10,
+  },
+  // Comments styling
+  commentsSection: {
+    marginTop: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  commentsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 10,
+  },
+  commentsEmpty: {
+    color: '#757575',
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  commentItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f2f2f2',
+  },
+  commentAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#E3F2FD',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+  },
+  commentAvatarText: {
+    color: '#1976D2',
+    fontWeight: '700',
+  },
+  commentMeta: {
+    color: '#616161',
+    marginBottom: 2,
+  },
+  commentAuthor: {
+    color: '#0D47A1',
+    fontWeight: '700',
+  },
+  commentText: {
+    color: '#333',
+    lineHeight: 20,
+  },
+  addCommentBox: {
+    marginTop: 12,
+    backgroundColor: '#FAFAFA',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#eeeeee',
+    padding: 10,
+  },
+  commentInput: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    color: '#333',
+    textAlignVertical: 'top',
+    marginBottom: 10,
+  },
+  commentSend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  commentSendText: {
+    color: '#fff',
+    fontWeight: '700',
+    marginLeft: 6,
+  },
+  postCommentButton: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1552bcff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    shadowColor: '#1552bcff',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  postCommentText: {
+    color: '#fff',
+    fontWeight: '700',
+    marginLeft: 8,
   },
 });
 

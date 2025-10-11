@@ -1,17 +1,26 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Calendar } from 'react-native-calendars';
 import { styles } from './styles/AppointmentStyles';
+import AppHeader from '../../component/common/AppHeader';
+import Icon from '../../component/common/Icon';
+import { useAuth } from '../../context/AuthContext';
 
 // Adjust per environment: iOS sim localhost, Android emulator 10.0.2.2, real device LAN IP
-const API_BASE = 'http://192.168.8.190:5000';
+const API_BASE = 'https://sample-production-6d27.up.railway.app';
 
 function MyAppointmentsScreen({ navigation }) {
   const [appointments, setAppointments] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { user } = useAuth();
+  const currentUserId = (user?.id || user?.uid || user?.email || '').toString();
+  const filteredAppointments = useMemo(
+    () => appointments.filter((apt) => (selectedDate ? apt.appointmentDate === selectedDate : true)),
+    [appointments, selectedDate]
+  );
 
   // Edit modal state
   const [editVisible, setEditVisible] = useState(false);
@@ -35,7 +44,15 @@ function MyAppointmentsScreen({ navigation }) {
       const res = await fetch(`${API_BASE}/api/appointments`);
       if (!res.ok) throw new Error('Failed to load appointments');
       const data = await res.json();
-      setAppointments(Array.isArray(data) ? data : []);
+      if (!currentUserId) {
+        setAppointments([]);
+      } else {
+        const mine = (Array.isArray(data) ? data : []).filter((a) => {
+          const uid = (a?.userId || a?.createdBy || a?.patientId || '').toString();
+          return uid && uid === currentUserId;
+        });
+        setAppointments(mine);
+      }
     } catch (e) {
       setError(e.message || 'Failed to load appointments');
     } finally {
@@ -99,11 +116,19 @@ function MyAppointmentsScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container}>
+      <AppHeader
+        title="My Appointments"
+        subtitle="View and manage your bookings"
+        rightIconName="add-circle-outline"
+        onRightPress={() => navigation?.navigate?.('DoctorAppointment')}
+        onBack={() => navigation?.goBack?.()}
+      />
       <View style={styles.content}>
-        <Text style={styles.title}>My Appointments</Text>
+        
 
         {/* Calendar to pick and filter by date */}
         <Calendar
+          style={{ borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, padding: 8, backgroundColor: '#FFFFFF', marginVertical: 8 }}
           onDayPress={(day) => setSelectedDate(day.dateString)}
           markedDates={appointments.reduce((acc, apt) => {
             acc[apt.appointmentDate] = {
@@ -135,37 +160,59 @@ function MyAppointmentsScreen({ navigation }) {
             <Text style={{ color: '#757575', fontSize: 16 }}>No appointments yet</Text>
           </View>
         ) : (
-          appointments
-            .filter((apt) => (selectedDate ? apt.appointmentDate === selectedDate : true))
-            .map((appointment) => (
-              <View key={appointment.id} style={styles.appointmentCard}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.appointmentDoctor}>{appointment.doctorName}</Text>
-                  <Text style={styles.appointmentSpec}>{appointment.doctorSpecialization}</Text>
-                  <Text style={styles.appointmentDate}>
-                    {appointment.appointmentDate} at {appointment.appointmentTime}
-                  </Text>
-                  <Text style={styles.appointmentPatient}>Patient: {appointment.patientName}</Text>
-                  {appointment.reason && (
-                    <Text style={styles.appointmentReason}>{appointment.reason}</Text>
-                  )}
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <TouchableOpacity
-                    style={[styles.buttonSecondary, { marginBottom: 8 }]}
-                    onPress={() => openEdit(appointment)}
-                  >
-                    <Text style={styles.buttonSecondaryText}>Edit</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => handleDelete(appointment.id)}
-                  >
-                    <Text style={styles.deleteButtonText}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
+          <>
+            {!selectedDate && (
+              <View style={{ paddingVertical: 8 }}>
+                <Text style={{ color: '#757575', fontSize: 12 }}>Tip: Select a date to filter your appointments.</Text>
               </View>
-            ))
+            )}
+            {filteredAppointments.length === 0 ? (
+              <View style={{ paddingTop: 40, alignItems: 'center' }}>
+                <Text style={{ color: '#757575', fontSize: 16 }}>
+                  {selectedDate ? 'No appointments on the selected date' : 'No appointments to show'}
+                </Text>
+              </View>
+            ) : (
+              filteredAppointments.map((appointment) => (
+                <View key={appointment.id} style={styles.appointmentCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.appointmentDoctor}>{appointment.doctorName}</Text>
+                    <Text style={styles.appointmentSpec}>{appointment.doctorSpecialization}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Icon name="calendar-outline" size={14} color="#616161" />
+                      <Text style={styles.appointmentDate}>
+                        {appointment.appointmentDate} at {appointment.appointmentTime}
+                      </Text>
+                    </View>
+                    <Text style={styles.appointmentPatient}>Patient: {appointment.patientName}</Text>
+                    {appointment.reason && (
+                      <Text style={styles.appointmentReason}>{appointment.reason}</Text>
+                    )}
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.buttonSecondary,
+                        { marginBottom: 8, width: 40, height: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }
+                      ]}
+                      onPress={() => openEdit(appointment)}
+                    >
+                      <Icon name="create-outline" size={18} color="#2196F3" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.deleteButton,
+                        { width: 40, height: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }
+                      ]}
+                      onPress={() => handleDelete(appointment.id)}
+                    >
+                      <Icon name="trash-outline" size={18} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </>
         )}
       </View>
 

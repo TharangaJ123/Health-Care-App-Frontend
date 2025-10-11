@@ -3,9 +3,14 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Modal } fro
 import { Calendar } from 'react-native-calendars';
 import { useFocusEffect } from '@react-navigation/native';
 import { styles } from './styles/AppointmentStyles';
-import { initDatabase, saveAppointment, getAllAppointments, getDoctors } from './database/db';
+import { initDatabase, saveAppointment, getAllAppointments, getUsers, deleteAppointment } from './database/db';
+import AppHeader from '../../component/common/AppHeader';
+import Icon from '../../component/common/Icon';
+import { useAuth } from '../../context/AuthContext';
 
 function DoctorAppointmentScreen({ navigation }) {
+  const { user } = useAuth();
+  const currentUserId = (user?.id || user?.uid || user?.email || '').toString();
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -34,8 +39,39 @@ function DoctorAppointmentScreen({ navigation }) {
   };
 
   const loadDoctors = async () => {
-    const list = await getDoctors();
-    setDoctors(list);
+    // Fetch all users, then filter client-side to be case-insensitive and resilient to data variations
+    const list = await getUsers();
+    const normalized = (list || [])
+      .map((u) => {
+        const userType = ((u?.userType ?? u?.role ?? u?.type ?? '') + '').toLowerCase();
+        return {
+          id: u.id || u.uid || u._id,
+          name: u.name || u.fullName || u.firstName || u.displayName || u.email || 'Doctor',
+          specialization: u.occupation || u.specialization || u.title || 'General',
+          userType,
+          raw: u,
+        };
+      })
+      .filter((u) => u.userType === 'doctor');
+    setDoctors(normalized);
+  };
+
+  const handleDelete = (id) => {
+    Alert.alert('Delete Appointment', 'Are you sure you want to delete this appointment?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteAppointment(id);
+            await loadAppointments();
+          } catch (e) {
+            Alert.alert('Error', e.message || 'Failed to delete');
+          }
+        },
+      },
+    ]);
   };
 
   // doctors loaded from backend
@@ -51,8 +87,10 @@ function DoctorAppointmentScreen({ navigation }) {
 
     try {
       await saveAppointment({
+        doctorId: selectedDoctor.id,
         doctorName: selectedDoctor.name,
         doctorSpecialization: selectedDoctor.specialization,
+        userId: currentUserId,
         patientName,
         appointmentDate: selectedDate,
         appointmentTime: selectedTime,
@@ -80,9 +118,15 @@ function DoctorAppointmentScreen({ navigation }) {
   if (selectedDoctor) {
     return (
       <ScrollView style={styles.container}>
+        <AppHeader
+          title={selectedDoctor.name}
+          subtitle={selectedDoctor.specialization}
+          onBack={() => setSelectedDoctor(null)}
+          rightIconName="information-circle"
+          onRightPress={() => Alert.alert('Booking', 'Fill the form to book your appointment')}
+        />
         <View style={styles.form}>
-          <Text style={styles.formTitle}>{selectedDoctor.name}</Text>
-          <Text style={styles.formSubtitle}>{selectedDoctor.specialization}</Text>
+          <Text style={styles.formTitle}>Appointment Details</Text>
 
           <Text style={styles.label}>Your Name *</Text>
           <TextInput
@@ -131,14 +175,20 @@ function DoctorAppointmentScreen({ navigation }) {
           />
 
           <TouchableOpacity style={styles.button} onPress={handleBookAppointment}>
-            <Text style={styles.buttonText}>Book Appointment</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <Icon name="calendar" size={20} color="#FFFFFF" />
+              <Text style={styles.buttonText}>Book Appointment</Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.buttonSecondary}
             onPress={() => setSelectedDoctor(null)}
           >
-            <Text style={styles.buttonSecondaryText}>Back</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Icon name="chevron-back" size={18} color="#2196F3" />
+              <Text style={styles.buttonSecondaryText}>Back</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -175,6 +225,13 @@ function DoctorAppointmentScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container}>
+      <AppHeader
+        title="Doctor Appointments"
+        subtitle="Choose a doctor and time"
+        rightIconName="calendar"
+        onRightPress={() => {/* no-op or navigate to my appointments if available */}}
+        onBack={() => navigation?.goBack?.()}
+      />
       <View style={styles.content}>
         <Text style={styles.title}>Select Doctor</Text>
 
@@ -184,23 +241,43 @@ function DoctorAppointmentScreen({ navigation }) {
             style={styles.doctorCard}
             onPress={() => setSelectedDoctor(doctor)}
           >
-            <Text style={styles.doctorName}>{doctor.name}</Text>
-            <Text style={styles.doctorSpec}>{doctor.specialization}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Icon name="person" size={18} color="#1976D2" />
+              <Text style={styles.doctorName}>{doctor.name}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Icon name="medical" size={16} color="#90CAF9" />
+              <Text style={styles.doctorSpec}>{doctor.specialization}</Text>
+            </View>
           </TouchableOpacity>
         ))}
 
         {/* All Appointments List */}
         {appointments.length > 0 && (
           <View style={styles.appointmentsListSection}>
-            <Text style={styles.sectionTitle}>All Appointments</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Icon name="calendar-outline" size={18} color="#0D47A1" />
+              <Text style={styles.sectionTitle}>All Appointments</Text>
+            </View>
             {appointments.map((appointment) => (
               <View key={appointment.id} style={styles.appointmentListCard}>
-                <Text style={styles.appointmentDoctor}>{appointment.doctorName}</Text>
-                <Text style={styles.appointmentSpec}>{appointment.doctorSpecialization}</Text>
-                <Text style={styles.appointmentDate}>
-                  📅 {appointment.appointmentDate} at {appointment.appointmentTime}
-                </Text>
-                <Text style={styles.appointmentPatient}>Patient: {appointment.patientName}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.appointmentDoctor}>{appointment.doctorName}</Text>
+                  <Text style={styles.appointmentSpec}>{appointment.doctorSpecialization}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Icon name="calendar-outline" size={14} color="#616161" />
+                    <Text style={styles.appointmentDate}>
+                      {appointment.appointmentDate} at {appointment.appointmentTime}
+                    </Text>
+                  </View>
+                  <Text style={styles.appointmentPatient}>Patient: {appointment.patientName}</Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.deleteButton, { width: 40, height: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }]}
+                  onPress={() => handleDelete(appointment.id)}
+                >
+                  <Icon name="trash-outline" size={18} color="#FFFFFF" />
+                </TouchableOpacity>
               </View>
             ))}
           </View>

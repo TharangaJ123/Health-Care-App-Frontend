@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { saveMedication } from '../../utils/storage';
 import { theme } from '../../utils/theme';
 import { getSampleMedicationCategories, getMedicationColors } from '../../utils/sampleData';
-import Header from '../Header';
+import ScreenHeader from '../../component/common/ScreenHeader';
 import { scheduleMedicationReminder } from '../../services/NotificationService';
 
 const AddMedicationScreen = ({ navigation }) => {
@@ -159,9 +159,9 @@ const AddMedicationScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header 
+      <ScreenHeader 
         title="Add Medication" 
-        onBack={() => navigation.goBack()}
+        onBack={() => navigation.goBack()}       
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useHealthData } from '../../context/HealthDataContext';
 
@@ -206,7 +206,7 @@ const PatientDashboardScreen = () => {
     <View style={[styles.metricCard, { borderLeftColor: getStatusColor(status) }]}>
       <View style={styles.metricHeader}>
         <Text style={styles.metricTitle}>{title}</Text>
-        <Ionicons name={icon} size={20} color="#666" />
+        <Icon name={icon} size={20} color="#666" />
       </View>
       <Text style={styles.metricValue}>
         {value} <Text style={styles.metricUnit}>{unit}</Text>
@@ -222,7 +222,7 @@ const PatientDashboardScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Patient Dashboard</Text>
         <View style={styles.headerRight} />
@@ -233,7 +233,7 @@ const PatientDashboardScreen = () => {
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
             <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={40} color="#666" />
+              <Icon name="person" size={40} color="#666" />
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.patientName}>John Doe</Text>

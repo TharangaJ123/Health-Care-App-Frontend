@@ -10,14 +10,14 @@ import {
   Share,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { LineChart, PieChart } from 'react-native-chart-kit';
 import StorageService from '../../services/StorageService';
 import { getAdherenceStats as getAdherenceStatsSchedule, getMedications as getMedsFromSchedule, getSchedule } from '../../utils/storage';
 import { generateAdherenceReport, shareReport } from '../../utils/reportGenerator';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import Header from '../Header';
+import ScreenHeader from '../../component/common/ScreenHeader';
 import * as MediaLibrary from 'expo-media-library';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Print from 'expo-print';
@@ -545,7 +545,7 @@ const ReportsScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header 
+      <ScreenHeader 
         title="Adherence Reports" 
         onBack={() => navigation.goBack()}
       />
@@ -590,28 +590,28 @@ const ReportsScreen = ({ navigation }) => {
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
                 <View style={[styles.statIcon, { backgroundColor: '#E8F5E8' }]}>
-                  <Ionicons name="checkmark" size={20} color="#10B981" />
+                  <Icon name="checkmark" size={20} color="#10B981" />
                 </View>
                 <Text style={styles.statNumber}>{adherenceData.taken}</Text>
                 <Text style={styles.statLabel}>Taken</Text>
               </View>
               <View style={styles.statItem}>
                 <View style={[styles.statIcon, { backgroundColor: '#FFEBEE' }]}>
-                  <Ionicons name="close" size={20} color="#EF4444" />
+                  <Icon name="close" size={20} color="#EF4444" />
                 </View>
                 <Text style={styles.statNumber}>{adherenceData.missed}</Text>
                 <Text style={styles.statLabel}>Missed</Text>
               </View>
               <View style={styles.statItem}>
                 <View style={[styles.statIcon, { backgroundColor: '#FFF7ED' }]}>
-                  <Ionicons name="remove" size={20} color="#F59E0B" />
+                  <Icon name="remove" size={20} color="#F59E0B" />
                 </View>
                 <Text style={styles.statNumber}>{adherenceData.skipped}</Text>
                 <Text style={styles.statLabel}>Skipped</Text>
               </View>
               <View style={styles.statItem}>
                 <View style={[styles.statIcon, { backgroundColor: '#F1F5F9' }]}>
-                  <Ionicons name="analytics-outline" size={20} color="#475569" />
+                  <Icon name="analytics-outline" size={20} color="#475569" />
                 </View>
                 <Text style={styles.statNumber}>{adherenceData.total}</Text>
                 <Text style={styles.statLabel}>Total</Text>
@@ -674,7 +674,7 @@ const ReportsScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Insights & Recommendations</Text>
           <View style={styles.insightCard}>
             <View style={styles.insightHeader}>
-              <Ionicons name="analytics" size={24} color="#2196F3" />
+              <Icon name="analytics" size={24} color="#2196F3" />
               <Text style={styles.insightTitle}>Adherence Rating</Text>
             </View>
             <Text style={styles.insightText}>
@@ -684,7 +684,7 @@ const ReportsScreen = ({ navigation }) => {
           
           <View style={styles.insightCard}>
             <View style={styles.insightHeader}>
-              <Ionicons name="bulb" size={24} color="#FF9800" />
+              <Icon name="bulb" size={24} color="#FF9800" />
               <Text style={styles.insightTitle}>Recommendations</Text>
             </View>
             <Text style={styles.insightText}>
@@ -696,7 +696,7 @@ const ReportsScreen = ({ navigation }) => {
           
           <View style={styles.insightCard}>
             <View style={styles.insightHeader}>
-              <Ionicons name="stats-chart" size={24} color="#4CAF50" />
+              <Icon name="stats-chart" size={24} color="#4CAF50" />
               <Text style={styles.insightTitle}>Statistics</Text>
             </View>
             <Text style={styles.insightText}>

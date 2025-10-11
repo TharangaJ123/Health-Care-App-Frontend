@@ -9,7 +9,7 @@ import {
   Platform,
   Switch,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import StorageService from '../../services/StorageService';
 import Header from '../Header';
 
@@ -93,7 +93,7 @@ const RemindersScreen = ({ navigation }) => {
           <View style={styles.settingCard}>
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
-                <Ionicons name="notifications" size={24} color="#2196F3" />
+                <Icon name="notifications" size={24} color="#2196F3" />
                 <View style={styles.settingText}>
                   <Text style={styles.settingLabel}>Enable Notifications</Text>
                   <Text style={styles.settingDescription}>Receive medication reminders</Text>
@@ -109,7 +109,7 @@ const RemindersScreen = ({ navigation }) => {
 
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
-                <Ionicons name="volume-high" size={24} color="#2196F3" />
+                <Icon name="volume-high" size={24} color="#2196F3" />
                 <View style={styles.settingText}>
                   <Text style={styles.settingLabel}>Sound</Text>
                   <Text style={styles.settingDescription}>Play notification sound</Text>
@@ -125,7 +125,7 @@ const RemindersScreen = ({ navigation }) => {
 
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
-                <Ionicons name="phone-portrait" size={24} color="#2196F3" />
+                <Icon name="phone-portrait" size={24} color="#2196F3" />
                 <View style={styles.settingText}>
                   <Text style={styles.settingLabel}>Vibration</Text>
                   <Text style={styles.settingDescription}>Vibrate on notifications</Text>
@@ -147,7 +147,7 @@ const RemindersScreen = ({ navigation }) => {
           
           {medications.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="medical" size={64} color="#E0E0E0" />
+              <Icon name="medical" size={64} color="#E0E0E0" />
               <Text style={styles.emptyStateText}>No medications added yet</Text>
               <TouchableOpacity
                 style={styles.addMedicationButton}
@@ -180,7 +180,7 @@ const RemindersScreen = ({ navigation }) => {
                     <View style={styles.timesList}>
                       {medication.times.map((time, index) => (
                         <View key={index} style={styles.timeChip}>
-                          <Ionicons name="time" size={24} color="#2196F3" />
+                          <Icon name="time" size={24} color="#2196F3" />
                           <Text style={styles.timeText}>{time}</Text>
                         </View>
                       ))}
@@ -200,36 +200,36 @@ const RemindersScreen = ({ navigation }) => {
             style={styles.actionCard}
             onPress={() => navigation.navigate('AddMedication')}
           >
-            <Ionicons name="add-circle" size={32} color="#667eea" />
+            <Icon name="add-circle" size={32} color="#667eea" />
             <View style={styles.actionText}>
               <Text style={styles.actionTitle}>Add New Medication</Text>
               <Text style={styles.actionDescription}>Set up reminders for a new medication</Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="#E0E0E0" />
+            <Icon name="chevron-forward" size={24} color="#E0E0E0" />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.actionCard}
             onPress={() => Alert.alert('Coming Soon', 'Snooze functionality will be available in the next update')}
           >
-            <Ionicons name="alarm" size={32} color="#FF9800" />
+            <Icon name="alarm" size={32} color="#FF9800" />
             <View style={styles.actionText}>
               <Text style={styles.actionTitle}>Snooze Settings</Text>
               <Text style={styles.actionDescription}>Configure snooze duration and limits</Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="#E0E0E0" />
+            <Icon name="chevron-forward" size={24} color="#E0E0E0" />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.actionCard}
             onPress={() => Alert.alert('Test Notification', 'This feature will send a test notification to verify your settings')}
           >
-            <Ionicons name="notifications" size={32} color="#4CAF50" />
+            <Icon name="notifications" size={32} color="#4CAF50" />
             <View style={styles.actionText}>
               <Text style={styles.actionTitle}>Test Notification</Text>
               <Text style={styles.actionDescription}>Send a test reminder to check settings</Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="#E0E0E0" />
+            <Icon name="chevron-forward" size={24} color="#E0E0E0" />
           </TouchableOpacity>
         </View>
       </ScrollView>

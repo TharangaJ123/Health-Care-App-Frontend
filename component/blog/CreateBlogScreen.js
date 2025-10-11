@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, Switch, SafeAreaView, StatusBar } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../common/Icon';
 import { apiFetch } from '../../config/api';
 import { useUser } from '../../context/UserContext';
 
@@ -109,12 +109,10 @@ const CreateBlogScreen = ({ onCreated, onCancel, initial, onUpdated }) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerLeft} onPress={onCancel}>
-          <Ionicons name="chevron-back" size={24} color="#000000ff" />
+          <Icon name="chevron-back" size={24} color="#000000ff" />
           <Text style={styles.backText}>Back</Text>
+          <Text style={styles.headerTitle}>   Create Your Story</Text>
         </TouchableOpacity>
-        <View>
-          <Text style={styles.headerTitle}>Create Your Story</Text>
-        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -162,7 +160,7 @@ const CreateBlogScreen = ({ onCreated, onCancel, initial, onUpdated }) => {
         <TouchableOpacity style={styles.colorSelectorValue} onPress={() => setShowColorPicker(!showColorPicker)}>
           <View style={[styles.colorSwatch, { backgroundColor: categoryColor }]} />
           <Text style={styles.colorSelectorText}>{categoryColor}</Text>
-          <Ionicons name={showColorPicker ? 'chevron-up' : 'chevron-down'} size={16} color="#666" />
+          <Icon name={showColorPicker ? 'chevron-up' : 'chevron-down'} size={16} color="#666" />
         </TouchableOpacity>
         {showColorPicker && (
           <View style={styles.colorDropdown}>
@@ -214,7 +212,7 @@ const styles = StyleSheet.create({
     marginTop:25
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1a1a1a',
   },

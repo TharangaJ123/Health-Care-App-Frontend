@@ -9,10 +9,10 @@ const getBaseUrl = () => {
   // Defaults by platform/runtime
   if (Platform.OS === 'android') {
     // Android emulator maps host loopback to 10.0.2.2
-    return 'http://10.0.2.2:5000';
+    return 'https://sample-production-6d27.up.railway.app';
   }
   // iOS simulator and web fallback
-  return 'http://localhost:5000';
+  return 'https://sample-production-6d27.up.railway.app';
 };
 
 const apiFetch = async (path, options = {}) => {
@@ -109,6 +109,20 @@ export const getDoctors = async () => {
     return Array.isArray(doctors) ? doctors : [];
   } catch (error) {
     console.error('Error fetching doctors (API):', error);
+    return [];
+  }
+};
+
+// Get users (optionally filtered) -> GET /api/users?userType=doctor
+export const getUsers = async (params = {}) => {
+  try {
+    const qs = new URLSearchParams();
+    if (params.userType) qs.set('userType', params.userType);
+    const path = `/api/users${qs.toString() ? `?${qs.toString()}` : ''}`;
+    const users = await apiFetch(path);
+    return Array.isArray(users) ? users : [];
+  } catch (error) {
+    console.error('Error fetching users (API):', error);
     return [];
   }
 };

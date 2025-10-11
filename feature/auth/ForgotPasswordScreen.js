@@ -11,7 +11,7 @@ import {
   Modal,
   StyleSheet
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { authStyles } from './styles/AuthStyles';
 
 const ForgotPasswordScreen = ({ navigation }) => {
@@ -68,7 +68,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
           }}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
 
         {/* Header */}
@@ -134,7 +134,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={[styles.modalIcon, { backgroundColor: '#28a745' }]}>
-                <Ionicons name="checkmark" size={40} color="#fff" />
+                <Icon name="checkmark" size={40} color="#fff" />
               </View>
               <Text style={styles.modalTitle}>Check Your Email</Text>
               <Text style={styles.modalText}>

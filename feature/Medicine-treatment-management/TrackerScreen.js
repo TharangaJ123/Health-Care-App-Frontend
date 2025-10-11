@@ -1,18 +1,18 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { theme } from '../../utils/theme';
 import { getSchedule, getWeeklyAdherence, getAdherenceStats } from '../../utils/storage';
 import { useFocusEffect } from '@react-navigation/native';
-import Header from '../Header';
+import ScreenHeader from '../../component/common/ScreenHeader';
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
 const StatCard = ({ label, value, tint, iconName }) => (
   <View style={styles.statCard}>
     <View style={[styles.statIconWrap, { backgroundColor: `${tint}15`, borderColor: `${tint}40` }] }>
-      <Ionicons name={iconName} size={18} color={tint} />
+      <Icon name={iconName} size={18} color={tint} />
     </View>
     <Text style={styles.statValue}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
@@ -92,12 +92,12 @@ export default function TrackerScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header 
-        title="Medication Tracker" 
+      <ScreenHeader 
+        title="Medi Tracker" 
         onBack={() => navigation.goBack()}
         rightIcon={
           <TouchableOpacity style={styles.headerActionBtn} onPress={() => navigation.navigate('Reports')}>
-            <Ionicons name="stats-chart" size={16} color="#FFFFFF" />
+            <Icon name="stats-chart" size={16} color="#FFFFFF" />
             <Text style={styles.headerActionText}>View Reports</Text>
           </TouchableOpacity>
         }
@@ -112,23 +112,12 @@ export default function TrackerScreen({ navigation }) {
           <StatCard label="Adherence" value={`${todayStats.adherence}%`} tint="#EF4444" iconName="pulse" />
         </View>
 
-        {/* Range Toggle */}
-        <View style={styles.toggleRow}>
-          {['daily','weekly','monthly'].map(key => (
-            <TouchableOpacity key={key} style={[styles.toggleBtn, range === key && styles.toggleBtnActive]} onPress={() => setRange(key)}>
-              <Text style={[styles.toggleText, range === key && styles.toggleTextActive]}>
-                {key === 'daily' ? 'Daily' : key === 'weekly' ? 'Weekly' : 'Monthly'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         {/* Overview */}
         <Text style={styles.sectionTitle}>{range === 'monthly' ? 'Monthly Overview' : range === 'weekly' ? 'Weekly Overview' : "Today's Overview"}</Text>
         <View style={styles.card}>
           <View style={styles.metricGrid}>
-            <MetricTile title="Weekly Adherence" value={`${weekly.adherenceRate}%`} right={<Ionicons name="trending-up" size={16} color="#10B981" />} />
-            <MetricTile title="Doses Taken" value={`${weekly.taken}/${weekly.total}`} right={<Ionicons name="medkit" size={16} color="#1E3A8A" />} />
+            <MetricTile title="Weekly Adherence" value={`${weekly.adherenceRate}%`} right={<Icon name="trending-up" size={16} color="#10B981" />} />
+            <MetricTile title="Doses Taken" value={`${weekly.taken}/${weekly.total}`} right={<Icon name="medkit" size={16} color="#1E3A8A" />} />
           </View>
           <View style={styles.progressTrack}>
             <View style={[styles.progressBar, { width: `${weekly.adherenceRate}%` }]} />

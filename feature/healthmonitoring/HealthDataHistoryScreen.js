@@ -8,7 +8,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { healthStyles } from './styles/HealthMonitoringStyles';
 import { useHealthData } from '../../context/HealthDataContext';
 
@@ -176,7 +176,7 @@ const HealthDataHistoryScreen = ({ navigation }) => {
                   style={[styles.checkbox, filters.abnormalOnly && styles.checkboxChecked]}
                   onPress={() => setFilters({...filters, abnormalOnly: !filters.abnormalOnly})}
                 >
-                  {filters.abnormalOnly && <Ionicons name="checkmark" size={20} color="#fff" />}
+                  {filters.abnormalOnly && <Icon name="checkmark" size={20} color="#fff" />}
                 </TouchableOpacity>
               </View>
               
@@ -249,7 +249,7 @@ const HealthDataHistoryScreen = ({ navigation }) => {
           <View style={styles.modalHeader}>
             <Text style={healthStyles.modalTitle}>Health Data Details</Text>
             <TouchableOpacity onPress={() => setSelectedItem(null)}>
-              <Ionicons name="close" size={24} color="#7f8c8d" />
+              <Icon name="close" size={24} color="#7f8c8d" />
             </TouchableOpacity>
           </View>
           
@@ -333,14 +333,14 @@ const HealthDataHistoryScreen = ({ navigation }) => {
           style={healthStyles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#2c3e50" />
+          <Icon name="arrow-back" size={24} color="#2c3e50" />
         </TouchableOpacity>
         <Text style={healthStyles.headerTitle}>Health History</Text>
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setShowFilterModal(true)}
         >
-          <Ionicons name="filter" size={20} color="#3498db" />
+          <Icon name="filter" size={20} color="#3498db" />
         </TouchableOpacity>
       </View>
       
@@ -364,7 +364,7 @@ const HealthDataHistoryScreen = ({ navigation }) => {
           />
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="pulse" size={50} color="#bdc3c7" />
+            <Icon name="pulse" size={50} color="#bdc3c7" />
             <Text style={styles.emptyStateText}>No health data available</Text>
             <Text style={styles.emptyStateSubtext}>
               Add your first health reading to start tracking

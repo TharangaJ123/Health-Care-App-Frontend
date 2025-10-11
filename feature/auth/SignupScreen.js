@@ -11,7 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { authStyles } from './styles/AuthStyles';
 import { validateField, validateForm } from './validationUtils';
 import ApiService from '../../services/ApiService';
@@ -193,12 +193,7 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
             ]}
             onPress={() => setUserType('patient')}
           >
-            <Ionicons 
-              name="person-outline" 
-              size={20} 
-              color={userType === 'patient' ? '#fff' : '#666'} 
-              style={{ marginRight: 8 }}
-            />
+            <Icon name="person-outline" size={20} color={userType === 'patient' ? '#fff' : '#666'} style={{ marginRight: 8 }} />
             <Text style={[
               authStyles.toggleText,
               userType === 'patient' ? authStyles.toggleTextActive : authStyles.toggleTextInactive
@@ -214,12 +209,7 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
             ]}
             onPress={() => setUserType('doctor')}
           >
-            <Ionicons 
-              name="medkit-outline" 
-              size={20} 
-              color={userType === 'doctor' ? '#fff' : '#666'}
-              style={{ marginRight: 8 }}
-            />
+            <Icon name="medkit-outline" size={20} color={userType === 'doctor' ? '#fff' : '#666'} style={{ marginRight: 8 }} />
             <Text style={[
               authStyles.toggleText,
               userType === 'doctor' ? authStyles.toggleTextActive : authStyles.toggleTextInactive
@@ -250,11 +240,7 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
             />
             {formData.firstName && (
               <View style={authStyles.validationIcon}>
-                <Ionicons
-                  name={validationErrors.firstName && touchedFields.firstName ? 'close-circle' : 'checkmark-circle'}
-                  size={20}
-                  color={validationErrors.firstName && touchedFields.firstName ? '#dc3545' : '#28a745'}
-                />
+                <Icon name={validationErrors.firstName && touchedFields.firstName ? 'close-circle' : 'checkmark-circle'} size={20} color={validationErrors.firstName && touchedFields.firstName ? '#dc3545' : '#28a745'} />
               </View>
             )}
             {validationErrors.firstName && touchedFields.firstName && (
@@ -283,11 +269,7 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
             />
             {formData.email && (
               <View style={authStyles.validationIcon}>
-                <Ionicons
-                  name={validationErrors.email && touchedFields.email ? 'close-circle' : 'checkmark-circle'}
-                  size={20}
-                  color={validationErrors.email && touchedFields.email ? '#dc3545' : '#28a745'}
-                />
+                <Icon name={validationErrors.email && touchedFields.email ? 'close-circle' : 'checkmark-circle'} size={20} color={validationErrors.email && touchedFields.email ? '#dc3545' : '#28a745'} />
               </View>
             )}
             {validationErrors.email && touchedFields.email && (
@@ -314,11 +296,7 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
             />
             {formData.phoneNumber && (
               <View style={authStyles.validationIcon}>
-                <Ionicons
-                  name={validationErrors.phoneNumber && touchedFields.phoneNumber ? 'close-circle' : 'checkmark-circle'}
-                  size={20}
-                  color={validationErrors.phoneNumber && touchedFields.phoneNumber ? '#dc3545' : '#28a745'}
-                />
+                <Icon name={validationErrors.phoneNumber && touchedFields.phoneNumber ? 'close-circle' : 'checkmark-circle'} size={20} color={validationErrors.phoneNumber && touchedFields.phoneNumber ? '#dc3545' : '#28a745'} />
               </View>
             )}
             {validationErrors.phoneNumber && touchedFields.phoneNumber && (
@@ -374,20 +352,12 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
                 }}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <Ionicons
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={24}
-                  color="#666"
-                />
+                <Icon name={showPassword ? 'eye-off' : 'eye'} size={24} color="#666" />
               </TouchableOpacity>
             </View>
             {formData.password && (
               <View style={[authStyles.validationIcon, { right: 15 }]}>
-                <Ionicons
-                  name={validationErrors.password && touchedFields.password ? 'close-circle' : 'checkmark-circle'}
-                  size={20}
-                  color={validationErrors.password && touchedFields.password ? '#dc3545' : '#28a745'}
-                />
+                <Icon name={validationErrors.password && touchedFields.password ? 'close-circle' : 'checkmark-circle'} size={20} color={validationErrors.password && touchedFields.password ? '#dc3545' : '#28a745'} />
               </View>
             )}
             {validationErrors.password && touchedFields.password && (
@@ -424,20 +394,12 @@ const SignupScreen = ({ navigation, onSignupSuccess }) => {
                 }}
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                <Ionicons
-                  name={showConfirmPassword ? 'eye-off' : 'eye'}
-                  size={24}
-                  color="#666"
-                />
+                <Icon name={showConfirmPassword ? 'eye-off' : 'eye'} size={24} color="#666" />
               </TouchableOpacity>
             </View>
             {formData.confirmPassword && (
               <View style={[authStyles.validationIcon, { right: 15 }]}>
-                <Ionicons
-                  name={validationErrors.confirmPassword && touchedFields.confirmPassword ? 'close-circle' : 'checkmark-circle'}
-                  size={20}
-                  color={validationErrors.confirmPassword && touchedFields.confirmPassword ? '#dc3545' : '#28a745'}
-                />
+                <Icon name={validationErrors.confirmPassword && touchedFields.confirmPassword ? 'close-circle' : 'checkmark-circle'} size={20} color={validationErrors.confirmPassword && touchedFields.confirmPassword ? '#dc3545' : '#28a745'} />
               </View>
             )}
             {validationErrors.confirmPassword && touchedFields.confirmPassword && (

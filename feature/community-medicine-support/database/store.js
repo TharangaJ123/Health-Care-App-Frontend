@@ -3,8 +3,8 @@ import { Platform } from 'react-native';
 const getBaseUrl = () => {
   const envUrl = process.env.EXPO_PUBLIC_API_URL || process.env.API_URL;
   if (envUrl) return envUrl.replace(/\/$/, '');
-  if (Platform.OS === 'android') return 'http://10.0.2.2:5000';
-  return 'http://localhost:5000';
+  if (Platform.OS === 'android') return 'https://sample-production-6d27.up.railway.app';
+  return 'https://sample-production-6d27.up.railway.app';
 };
 
 const apiFetch = async (path, options = {}) => {

@@ -10,7 +10,7 @@ import {
   Alert,
   Share,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../common/Icon';
 import { apiFetch } from '../../config/api';
 
 import GoalTimeline from './goal-timeline';
@@ -200,7 +200,7 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
   const ProgressCircle = ({ completed, size = 100 }) => {
     return (
       <View style={[styles.progressCircle, { width: size, height: size }]}>
-        <Ionicons 
+        <Icon 
           name={completed ? "checkmark-circle" : "ellipse-outline"} 
           size={size - 20} 
           color={completed ? "#4CD964" : "#E5E7EB"} 
@@ -215,7 +215,7 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
   const InfoCard = ({ icon, title, value, color = '#007AFF' }) => (
     <View style={styles.infoCard}>
       <View style={[styles.infoIcon, { backgroundColor: color + '20' }]}>
-        <Ionicons name={icon} size={20} color={color} />
+        <Icon name={icon} size={20} color={color} />
       </View>
       <View style={styles.infoContent}>
         <Text style={styles.infoTitle}>{title}</Text>
@@ -234,13 +234,13 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
           style={styles.backButton}
           onPress={onGoBack}
         >
-          <Ionicons name="chevron-back" size={24} color="#333" />
+          <Icon name="chevron-back" size={24} color="#333" />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton} onPress={handleDelete}>
-            <Ionicons name="trash-outline" size={22} color="#FF3B30" />
+            <Icon name="trash-outline" size={22} color="#FF3B30" />
           </TouchableOpacity>
         </View>
       </View>
@@ -252,7 +252,7 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
           
           <View style={styles.goalHeader}>
             <View style={styles.typeBadge}>
-              <Ionicons 
+              <Icon 
                 name={getTypeIcon(currentGoal.type)} 
                 size={16} 
                 color={getTypeColor(currentGoal.type)} 
@@ -270,7 +270,7 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
         {/* Priority Indicator */}
         <View style={styles.prioritySection}>
           <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(currentGoal.priority) }]}>
-            <Ionicons name="flag-outline" size={16} color="#fff" />
+            <Icon name="flag-outline" size={16} color="#fff" />
             <Text style={styles.priorityText}>
               {currentGoal.priority.charAt(0).toUpperCase() + currentGoal.priority.slice(1)} Priority
             </Text>
@@ -309,7 +309,7 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
         {/* <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Action Plan</Text>
-                <Ionicons name="sparkles-outline" size={22} color="#7C3AED" />
+                <Icon name="sparkles-outline" size={22} color="#7C3AED" />
           </View>
 
           <View>
@@ -352,7 +352,7 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>AI Roadmap & Schedule</Text>
-            <Ionicons name="sparkles-outline" size={22} color="#7C3AED" />
+            <Icon name="sparkles-outline" size={22} color="#7C3AED" />
           </View>
           <GoalTimeline steps={Array.isArray(currentGoal.steps) ? currentGoal.steps : []} startDate={currentGoal.date} onToggleStep={toggleStep} />
         </View>
@@ -383,7 +383,7 @@ const GoalDetailScreen = ({ route, navigation, goal, onGoBack, onGoalUpdate }) =
                   Alert.alert('Error', 'Failed to load recommendations.');
                 }
               }}>
-                <Ionicons name="sparkles-outline" size={18} color="#fff" />
+                <Icon name="sparkles-outline" size={18} color="#fff" />
                 <Text style={styles.generateRecoText}>Get AI Recommendations</Text>
               </TouchableOpacity>
             )}

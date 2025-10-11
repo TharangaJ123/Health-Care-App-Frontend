@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const DEFAULT_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-const API_BASE_URL = `http://${DEFAULT_HOST}:5000/api`;
+// const DEFAULT_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const API_BASE_URL = `https://sample-production-6d27.up.railway.app/api`;
 
 class ApiService {
   // Email verification

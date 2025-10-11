@@ -10,7 +10,7 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import ApiService from '../../services/ApiService';
 import { useUser } from '../../context/UserContext';
 import { authStyles } from './styles/AuthStyles';
@@ -176,12 +176,7 @@ const LoginScreen = ({ navigation, onLogin }) => {
             ]}
             onPress={() => setUserType('patient')}
           >
-            <Ionicons 
-              name="person-outline" 
-              size={20} 
-              color={userType === 'patient' ? '#fff' : '#666'} 
-              style={{ marginRight: 8 }}
-            />
+            <Icon name="person-outline" size={20} color={userType === 'patient' ? '#fff' : '#666'} style={{ marginRight: 8 }} />
             <Text style={[
               authStyles.toggleText,
               userType === 'patient' ? authStyles.toggleTextActive : authStyles.toggleTextInactive
@@ -197,12 +192,7 @@ const LoginScreen = ({ navigation, onLogin }) => {
             ]}
             onPress={() => setUserType('doctor')}
           >
-            <Ionicons 
-              name="medkit-outline" 
-              size={20} 
-              color={userType === 'doctor' ? '#fff' : '#666'}
-              style={{ marginRight: 8 }}
-            />
+            <Icon name="medkit-outline" size={20} color={userType === 'doctor' ? '#fff' : '#666'} style={{ marginRight: 8 }} />
             <Text style={[
               authStyles.toggleText,
               userType === 'doctor' ? authStyles.toggleTextActive : authStyles.toggleTextInactive
@@ -215,7 +205,7 @@ const LoginScreen = ({ navigation, onLogin }) => {
         {/* Login Error Message */}
         {loginError ? (
           <View style={authStyles.errorContainer}>
-            <Ionicons name="alert-circle" size={20} color="#dc3545" style={{ marginRight: 8 }} />
+            <Icon name="alert-circle" size={20} color="#dc3545" style={{ marginRight: 8 }} />
             <Text style={authStyles.loginErrorText}>{loginError}</Text>
           </View>
         ) : null}
@@ -243,11 +233,7 @@ const LoginScreen = ({ navigation, onLogin }) => {
             />
             {email && (
               <View style={authStyles.validationIcon}>
-                <Ionicons
-                  name={validationErrors.email && touchedFields.email ? 'close-circle' : 'checkmark-circle'}
-                  size={20}
-                  color={validationErrors.email && touchedFields.email ? '#dc3545' : '#28a745'}
-                />
+                <Icon name={validationErrors.email && touchedFields.email ? 'close-circle' : 'checkmark-circle'} size={20} color={validationErrors.email && touchedFields.email ? '#dc3545' : '#28a745'} />
               </View>
             )}
             {validationErrors.email && touchedFields.email && (
@@ -284,20 +270,12 @@ const LoginScreen = ({ navigation, onLogin }) => {
                 }}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <Ionicons
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={24}
-                  color="#666"
-                />
+                <Icon name={showPassword ? 'eye-off' : 'eye'} size={24} color="#666" />
               </TouchableOpacity>
             </View>
             {password && (
               <View style={[authStyles.validationIcon, { right: 15 }]}>
-                <Ionicons
-                  name={validationErrors.password && touchedFields.password ? 'close-circle' : 'checkmark-circle'}
-                  size={20}
-                  color={validationErrors.password && touchedFields.password ? '#dc3545' : '#28a745'}
-                />
+                <Icon name={validationErrors.password && touchedFields.password ? 'close-circle' : 'checkmark-circle'} size={20} color={validationErrors.password && touchedFields.password ? '#dc3545' : '#28a745'} />
               </View>
             )}
             {validationErrors.password && touchedFields.password && (

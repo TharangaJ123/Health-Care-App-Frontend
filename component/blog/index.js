@@ -12,7 +12,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../common/Icon';
 import { apiFetch } from '../../config/api';
 import { useUser } from '../../context/UserContext';
 import CreateBlogScreen from './CreateBlogScreen';
@@ -170,7 +170,7 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
           <View style={styles.headerRightRow}>
             {item.isVerified && (
               <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark-circle" size={14} color="#4A90E2" />
+                <Icon name="checkmark-circle" size={14} color="#4A90E2" />
                 <Text style={styles.verifiedText}>Verified</Text>
               </View>
             )}
@@ -190,7 +190,7 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
                 setMenuVisible(true);
               }}
             >
-              <Ionicons name="ellipsis-vertical" size={18} color="#666" />
+              <Icon name="ellipsis-vertical" size={18} color="#666" />
             </TouchableOpacity>
           </View>
         </View>
@@ -235,11 +235,11 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
                   style={styles.statItem}
                   onPress={() => handleHelpful(item.id || item._id)}
                 >
-                  <Ionicons name="heart" size={16} color="#FF6B6B" />
+                  <Icon name="heart" size={16} color="#FF6B6B" />
                   <Text style={styles.statText}>{item.helpfulCount}</Text>
                 </TouchableOpacity>
                 <View style={styles.statItem}>
-                  <Ionicons name="time" size={14} color="#666" />
+                  <Icon name="time" size={14} color="#666" />
                   <Text style={styles.statText}>{item.readTime}</Text>
                 </View>
               </View>
@@ -303,7 +303,7 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
       ]}
       onPress={() => setSelectedCategory(item.name)}
     >
-      <Ionicons
+      <Icon
         name={item.icon}
         size={16}
         color={selectedCategory === item.name ? '#fff' : item.color}
@@ -331,7 +331,7 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#666" />
+        <Icon name="search" size={20} color="#666" />
         <TextInput
           style={styles.searchInput}
           placeholder="Search symptoms, medications, or experiences..."
@@ -341,7 +341,7 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color="#999" />
+            <Icon name="close-circle" size={20} color="#999" />
           </TouchableOpacity>
         )}
       </View>
@@ -374,7 +374,7 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
         contentContainerStyle={styles.postsList}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="medical-outline" size={80} color="#E0E0E0" />
+            <Icon name="medical-outline" size={80} color="#E0E0E0" />
             <Text style={styles.emptyStateText}>No stories found</Text>
             <Text style={styles.emptyStateSubtext}>
               {searchQuery ? 'Try different search terms' : 'Be the first to share your experience'}
@@ -428,7 +428,7 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
                 setMenuVisible(false);
               }}
             >
-              <Ionicons name="create-outline" size={18} color="#333" />
+              <Icon name="create-outline" size={18} color="#333" />
               <Text style={styles.menuItemText}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -438,7 +438,7 @@ const BlogScreen = ({ onNavigateToBlogDetail }) => {
                 setMenuVisible(false);
               }}
             >
-              <Ionicons name="trash-outline" size={18} color="#F44336" />
+              <Icon name="trash-outline" size={18} color="#F44336" />
               <Text style={[styles.menuItemText, styles.menuDangerText]}>Delete</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.menuCancel} onPress={() => setMenuVisible(false)}>

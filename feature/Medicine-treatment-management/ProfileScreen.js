@@ -9,13 +9,13 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../component/common/Icon';
 import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../context/AuthContext';
 import StorageService from '../../services/StorageService';
 import { getMedications, getWeeklyAdherence, getMonthlyAdherence } from '../../utils/storage';
 import { theme } from '../../utils/theme';
-import Header from '../Header';
+import ScreenHeader from '../../component/common/ScreenHeader';
 
 const ProfileScreen = ({ navigation }) => {
   const { user, updateUser, logout: userLogout } = useUser();
@@ -170,7 +170,7 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header 
+      <ScreenHeader 
         title="Profile" 
         onBack={() => navigation.goBack()}
         rightIcon={
@@ -178,7 +178,7 @@ const ProfileScreen = ({ navigation }) => {
             style={styles.editButton}
             onPress={() => isEditing ? saveProfile() : setIsEditing(true)}
           >
-            <Ionicons 
+            <Icon 
               name={isEditing ? "checkmark" : "create"} 
               size={24} 
               color="#ffffff" 
@@ -188,8 +188,10 @@ const ProfileScreen = ({ navigation }) => {
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Profile Avatar */}
         {loading ? (
           <View style={styles.loadingContainer}>
+            <Icon name="time-outline" size={24} color="#999" />
             <Text style={styles.loadingText}>Loading profile...</Text>
           </View>
         ) : (
@@ -197,7 +199,7 @@ const ProfileScreen = ({ navigation }) => {
             {/* Profile Avatar */}
             <View style={styles.avatarSection}>
               <View style={styles.avatar}>
-                <Ionicons name="person" size={24} color={theme.colors.accentPrimary} />
+                <Icon name="person" size={24} color={theme.colors.accentPrimary} />
               </View>
               <Text style={styles.userName}>{profile.name || 'Your Name'}</Text>
               <Text style={styles.userEmail}>{profile.email || 'your.email@example.com'}</Text>
@@ -231,20 +233,20 @@ const ProfileScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Quick Stats</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
-              <Ionicons name="medical" size={24} color={theme.colors.accentPrimary} />
-              <Text style={styles.statNumber}>{stats.medications}</Text>
+              <Icon name="medical" size={24} color={theme.colors.accentPrimary} />
+              <Text style={styles.statNumber}>5</Text>
               <Text style={styles.statLabel}>Medications</Text>
             </View>
             
             <View style={styles.statCard}>
-              <Ionicons name="calendar" size={24} color={theme.colors.accentPrimary} />
-              <Text style={styles.statNumber}>{stats.daysActive}</Text>
+              <Icon name="calendar" size={24} color={theme.colors.accentPrimary} />
+              <Text style={styles.statNumber}>30</Text>
               <Text style={styles.statLabel}>Days Active</Text>
             </View>
             
             <View style={styles.statCard}>
-              <Ionicons name="trophy" size={32} color={theme.colors.accentSecondary} />
-              <Text style={styles.statNumber}>{stats.adherence}%</Text>
+              <Icon name="trophy" size={32} color={theme.colors.accentSecondary} />
+              <Text style={styles.statNumber}>85%</Text>
               <Text style={styles.statLabel}>Adherence</Text>
             </View>
           </View>
@@ -255,21 +257,21 @@ const ProfileScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Actions</Text>
           
           <TouchableOpacity style={styles.actionCard}>
-            <Ionicons name="mail" size={24} color={theme.colors.accentPrimary} />
+            <Icon name="mail" size={24} color={theme.colors.accentPrimary} />
             <View style={styles.actionText}>
               <Text style={styles.actionTitle}>Export Health Data</Text>
               <Text style={styles.actionDescription}>Share your medication history</Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="#E0E0E0" />
+            <Icon name="chevron-forward" size={24} color="#E0E0E0" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionCard}>
-            <Ionicons name="cloud-upload" size={24} color="#4CAF50" />
+            <Icon name="cloud-upload" size={24} color="#4CAF50" />
             <View style={styles.actionText}>
               <Text style={styles.actionTitle}>Backup Data</Text>
               <Text style={styles.actionDescription}>Save your data to cloud</Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="#E0E0E0" />
+            <Icon name="chevron-forward" size={24} color="#E0E0E0" />
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -340,24 +342,24 @@ const ProfileScreen = ({ navigation }) => {
               );
             }}
           >
-            <Ionicons name="log-out" size={24} color="#F44336" />
+            <Icon name="log-out" size={24} color="#F44336" />
             <View style={styles.actionText}>
               <Text style={[styles.actionTitle, { color: '#F44336' }]}>Logout</Text>
               <Text style={styles.actionDescription}>Sign out of your account</Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="#E0E0E0" />
+            <Icon name="chevron-forward" size={24} color="#E0E0E0" />
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.actionCard}
             onPress={() => Alert.alert('Coming Soon', 'This feature will be available in the next update')}
           >
-            <Ionicons name="people" size={24} color={theme.colors.accentSecondary} />
+            <Icon name="people" size={24} color={theme.colors.accentSecondary} />
             <View style={styles.actionText}>
               <Text style={styles.actionTitle}>Share with Caregiver</Text>
               <Text style={styles.actionDescription}>Give access to family member</Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color="#E0E0E0" />
+            <Icon name="chevron-forward" size={24} color="#E0E0E0" />
           </TouchableOpacity>
         </View>
         </>
