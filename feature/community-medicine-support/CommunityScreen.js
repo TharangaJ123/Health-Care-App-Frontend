@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { cStyles } from './styles/CommunityStyles';
 import { initCommunityStore, getGroups, getRequests } from './database/store';
@@ -6,8 +6,16 @@ import LocationGroups from './LocationGroups';
 import MedicineRequests from './MedicineRequests';
 import PostRequest from './PostRequest';
 import ModerationPanel from './ModerationPanel';
+import ScreenHeader from '../../component/common/ScreenHeader';
+import Icon from '../../component/common/Icon';
+import { useAuth } from '../../context/AuthContext';
 
-const TABS = ['Groups', 'Requests', 'Post', 'Moderation'];
+const tabIcons = {
+  Groups: 'people-outline',
+  Requests: 'analytics-outline',
+  Post: 'create-outline',
+  Moderation: 'warning-outline',
+};
 
 export default function CommunityScreen() {
   const [activeTab, setActiveTab] = useState('Groups');
@@ -15,6 +23,11 @@ export default function CommunityScreen() {
   const [requests, setRequests] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [selectedGroupName, setSelectedGroupName] = useState('');
+  const { user } = useAuth();
+  const userTypeNormalized = ((user?.userType ?? user?.role ?? user?.type ?? '') + '').toLowerCase();
+  const isDoctor = userTypeNormalized === 'doctor';
+
+  const TABS = useMemo(() => (isDoctor ? ['Groups', 'Requests', 'Post', 'Moderation'] : ['Groups', 'Requests', 'Post']), [isDoctor]);
 
   const reload = async () => {
     const [g, r] = await Promise.all([getGroups(), getRequests()]);
@@ -28,18 +41,34 @@ export default function CommunityScreen() {
 
   return (
     <View style={cStyles.container}>
-      <View style={cStyles.header}>
-        <Text style={cStyles.headerTitle}>Community Medicine Support</Text>
-      </View>
+      <ScreenHeader
+        title="Community Medicine Support"
+        rightIcon={<Icon name="information-circle" size={22} color="#1976D2" />}
+        rightAction={() =>
+          Alert.alert(
+            'About',
+            'Find and respond to medicine availability requests in your community. Use tabs to browse groups, view requests, post, and moderate.'
+          )
+        }
+      />
 
       <View style={cStyles.tabs}>
         {TABS.map(tab => (
           <TouchableOpacity
             key={tab}
             style={[cStyles.tab, activeTab === tab && cStyles.tabActive]}
-            onPress={() => setActiveTab(tab)}
+            onPress={() => {
+              if (tab === 'Moderation' && !isDoctor) {
+                Alert.alert('Restricted', 'Only doctors can access Moderation');
+                return;
+              }
+              setActiveTab(tab);
+            }}
           >
-            <Text style={[cStyles.tabText, activeTab === tab && cStyles.tabTextActive]}>{tab}</Text>
+            <View style={{ alignItems: 'center', gap: 4 }}>
+              <Icon name={tabIcons[tab]} size={18} color={activeTab === tab ? '#FFFFFF' : '#1976D2'} />
+              <Text style={[cStyles.tabText, activeTab === tab && cStyles.tabTextActive]}>{tab}</Text>
+            </View>
           </TouchableOpacity>
         ))}
       </View>
@@ -73,7 +102,7 @@ export default function CommunityScreen() {
             }}
           />
         )}
-        {activeTab === 'Moderation' && (
+        {isDoctor && activeTab === 'Moderation' && (
           <ModerationPanel requests={requests} onChanged={reload} />
         )}
       </ScrollView>
