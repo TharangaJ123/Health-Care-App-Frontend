@@ -5,12 +5,19 @@ import { AuthProvider } from './context/AuthContext';
 import { HealthDataProvider } from './context/HealthDataContext';
 import { useFonts } from 'expo-font';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useEffect } from 'react';
+import { initializeNotifications } from './services/NotificationService';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
     ...Ionicons.font,
     ...MaterialIcons.font,
   });
+
+  useEffect(() => {
+    // Initialize notifications when app starts
+    initializeNotifications().catch(console.error);
+  }, []);
 
   if (!fontsLoaded) return null;
 

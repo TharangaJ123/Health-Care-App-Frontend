@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "myapp",
+    "name": "atmoscare",
     "slug": "myapp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/onboading/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "runtimeVersion": {
@@ -16,14 +16,19 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.atmoscare.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.atmoscareapp.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,6 +42,11 @@
           "color": "#ffffff"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "858ba3aa-e022-4224-9846-7ca2d248afcb"
+      }
+    }
   }
 }

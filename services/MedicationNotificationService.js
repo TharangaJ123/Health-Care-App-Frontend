@@ -1,5 +1,4 @@
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { Alert } from 'react-native';
 
@@ -29,7 +28,7 @@ async function configureNotificationChannel() {
 let isInitialized = false;
 export async function initializeNotifications() {
   if (isInitialized) return;
-
+  
   try {
     await configureNotificationChannel();
     await requestNotificationPermissions();
@@ -51,7 +50,7 @@ async function requestNotificationPermissions() {
         allowAnnouncements: true,
       },
     });
-
+    
     if (status !== 'granted') {
       Alert.alert(
         'Permission Required',
@@ -71,45 +70,12 @@ async function requestNotificationPermissions() {
 function convertTo24Hour(time12h) {
   const [time, period] = time12h.split(' ');
   let [hours, minutes] = time.split(':').map(Number);
-
+  
   if (period === 'PM' && hours < 12) hours += 12;
   if (period === 'AM' && hours === 12) hours = 0;
-
+  
   return { hours, minutes };
 }
-
-// Function to show immediate confirmation when adding medication
-export const showMedicationAddedConfirmation = async (medication) => {
-  try {
-    if (!isInitialized) {
-      await initializeNotifications();
-    }
-
-    // Check if permissions are granted
-    const { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') {
-      console.log('Notification permissions not granted for confirmation');
-      return;
-    }
-
-    // Show immediate confirmation notification
-    await Notifications.presentNotificationAsync({
-      title: '✅ Medication Added',
-      body: `Reminder set for ${medication.name} at ${medication.times?.join(', ') || 'scheduled time'}`,
-      data: {
-        type: 'medication-added',
-        medicationId: medication.id,
-        medicationName: medication.name
-      },
-      sound: 'default',
-      priority: 'high',
-    });
-
-    console.log(`Showed confirmation notification for ${medication.name}`);
-  } catch (error) {
-    console.error('Error showing medication confirmation:', error);
-  }
-};
 
 export const scheduleMedicationReminder = async (medication) => {
   try {
@@ -122,14 +88,14 @@ export const scheduleMedicationReminder = async (medication) => {
 
     // Use times array from medication data
     const reminderTimes = medication.times || [];
-
+    
     if (reminderTimes.length === 0) {
       console.log('No reminder times specified for medication:', medication.name);
       return;
     }
 
     console.log(`Scheduling ${reminderTimes.length} reminders for ${medication.name}`);
-
+    
     // Schedule each reminder time
     for (const timeStr of reminderTimes) {
       try {
@@ -153,7 +119,7 @@ export const scheduleMedicationReminder = async (medication) => {
           content: {
             title: `💊 ${medication.name}`,
             body: `Time to take ${medication.dosage || 'your medication'}`,
-            data: {
+            data: { 
               type: 'medication-reminder',
               medicationId: medication.id,
               medicationName: medication.name,
@@ -169,9 +135,9 @@ export const scheduleMedicationReminder = async (medication) => {
           },
         });
 
-        console.log(`Scheduled reminder notification ${notificationId} for ${medication.name} at ${timeStr}`);
+        console.log(`Scheduled notification ${notificationId} for ${medication.name} at ${timeStr}`);
       } catch (error) {
-        console.error(`Error scheduling reminder notification for ${timeStr}:`, error);
+        console.error(`Error scheduling notification for ${timeStr}:`, error);
       }
     }
   } catch (error) {
@@ -187,11 +153,11 @@ export const cancelScheduledReminder = async (medicationId) => {
     const notificationsToCancel = allNotifications.filter(
       notification => notification.content.data.medicationId === medicationId
     );
-
+    
     for (const notification of notificationsToCancel) {
       await Notifications.cancelScheduledNotificationAsync(notification.identifier);
     }
-
+    
     console.log(`Cancelled ${notificationsToCancel.length} notifications for medication ${medicationId}`);
   } catch (error) {
     console.error('Error cancelling scheduled notifications:', error);

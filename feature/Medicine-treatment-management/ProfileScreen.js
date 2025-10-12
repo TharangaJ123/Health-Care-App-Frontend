@@ -126,13 +126,14 @@ const ProfileScreen = ({ navigation }) => {
         name: profile.name,
         email: profile.email,
       });
-      
+
       // Save additional profile data to storage
       const preferences = await StorageService.getUserPreferences();
       await StorageService.saveUserPreferences({
         ...preferences,
         profile,
       });
+
       setIsEditing(false);
       Alert.alert('Success', 'Profile updated successfully');
 
@@ -141,6 +142,12 @@ const ProfileScreen = ({ navigation }) => {
     } catch (error) {
       Alert.alert('Error', 'Failed to update profile');
     }
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    // Reload original profile data to cancel changes
+    loadProfile();
   };
 
   const updateField = (field, value) => {
@@ -174,16 +181,26 @@ const ProfileScreen = ({ navigation }) => {
         title="Profile" 
         onBack={() => navigation.goBack()}
         rightIcon={
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => isEditing ? saveProfile() : setIsEditing(true)}
-          >
-            <Icon 
-              name={isEditing ? "checkmark" : "create"} 
-              size={24} 
-              color="#ffffff" 
-            />
-          </TouchableOpacity>
+          isEditing ? (
+            <View style={styles.editButtonsContainer}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={cancelEdit}
+              >
+                <Icon name="close" size={20} color="#333" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={saveProfile}
+              >
+                <Icon name="checkmark" size={20} color="#333" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity onPress={() => setIsEditing(true)}>
+              <Icon name="create" size={24} color="#333" />
+            </TouchableOpacity>
+          )
         }
       />
 
@@ -234,19 +251,19 @@ const ProfileScreen = ({ navigation }) => {
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Icon name="medical" size={24} color={theme.colors.accentPrimary} />
-              <Text style={styles.statNumber}>5</Text>
+              <Text style={styles.statNumber}>{stats.medications}</Text>
               <Text style={styles.statLabel}>Medications</Text>
             </View>
             
             <View style={styles.statCard}>
               <Icon name="calendar" size={24} color={theme.colors.accentPrimary} />
-              <Text style={styles.statNumber}>30</Text>
+              <Text style={styles.statNumber}>{stats.daysActive}</Text>
               <Text style={styles.statLabel}>Days Active</Text>
             </View>
             
             <View style={styles.statCard}>
               <Icon name="trophy" size={32} color={theme.colors.accentSecondary} />
-              <Text style={styles.statNumber}>85%</Text>
+              <Text style={styles.statNumber}>{stats.adherence}%</Text>
               <Text style={styles.statLabel}>Adherence</Text>
             </View>
           </View>
@@ -404,10 +421,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffffff',
   },
-  editButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  editButtonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cancelButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  saveButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',

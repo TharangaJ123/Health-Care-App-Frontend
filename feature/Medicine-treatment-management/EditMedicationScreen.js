@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { getMedications, updateMedication, deleteMedication } from '../../utils/storage';
-import { scheduleMedicationReminder, cancelScheduledReminder } from '../../services/NotificationService';
+import { scheduleMedicationReminder, cancelScheduledReminder, showMedicationAddedConfirmation } from '../../services/NotificationService';
 import { getSampleMedicationCategories, getMedicationColors } from '../../utils/sampleData';
 import { theme } from '../../utils/theme';
 import Header from '../Header';
@@ -189,13 +189,26 @@ const EditMedicationScreen = ({ navigation, route }) => {
         // Update the medication in storage
         await updateMedication(idNum, medicationToUpdate);
         
+        // Show confirmation notification for update
+        if (medicationToUpdate.reminderEnabled && medicationToUpdate.times && medicationToUpdate.times.length > 0) {
+          try {
+            await showMedicationAddedConfirmation({
+              id: idNum,
+              ...medicationToUpdate,
+              name: medicationToUpdate.name,
+              times: medicationToUpdate.times
+            });
+          } catch (error) {
+            console.error('Error showing update confirmation notification:', error);
+          }
+        }
+
         // Schedule new notifications if reminders are enabled (only on native platforms)
         if (Platform.OS !== 'web' && medicationToUpdate.reminderEnabled && medicationToUpdate.times && medicationToUpdate.times.length > 0) {
           try {
             await scheduleMedicationReminder({
               id: idNum,
-              ...medicationToUpdate,
-              daysOfWeek: [0, 1, 2, 3, 4, 5, 6] // Default to all days
+              ...medicationToUpdate
             });
           } catch (error) {
             console.error('Error scheduling notifications:', error);
