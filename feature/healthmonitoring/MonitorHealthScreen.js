@@ -13,6 +13,7 @@ import {
   Animated
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
+import { Svg, Path, Defs, LinearGradient, Stop, Line as SvgLine, Rect, Circle, Pattern } from 'react-native-svg';
 import Icon from '../../component/common/Icon';
 import { useHealthData } from '../../context/HealthDataContext';
 
@@ -536,75 +537,67 @@ const glucoseChartData = chartData.glucose;
           
           {/* Chart area */}
           <View style={styles.chart}>
-            <svg width="100%" height="100%" viewBox={`0 0 ${width - 80} 120`}>
+            <Svg width={width - 80} height={120} viewBox={`0 0 ${width - 80} 120`}>
               {/* Gradient background for the chart area */}
-              <defs>
-                <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor={`${lineColor}10`} />
-                  <stop offset="100%" stopColor="#1E1E1E00" />
-                </linearGradient>
-              </defs>
-              
+              <Defs>
+                <LinearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <Stop offset="0%" stopColor={`${lineColor}10`} />
+                  <Stop offset="100%" stopColor="#1E1E1E00" />
+                </LinearGradient>
+              </Defs>
+
               {/* Fill area under the line */}
-              <path 
-                d={`${linePoints} L ${width-80},120 L 0,120 Z`} 
+              <Path
+                d={`${linePoints} L ${width - 80},120 L 0,120 Z`}
                 fill="url(#chartGradient)"
-                fillOpacity="0.3"
+                fillOpacity={0.3}
               />
-              
+
               {/* Grid lines */}
               {yAxis.map((item, index) => (
-                <line 
+                <SvgLine
                   key={`grid-${index}`}
-                  x1="0" 
-                  y1={item.y} 
-                  x2="100%" 
-                  y2={item.y} 
-                  stroke="#2D2D2D" 
-                  strokeWidth="1"
+                  x1={0}
+                  y1={item.y}
+                  x2={width - 80}
+                  y2={item.y}
+                  stroke="#2D2D2D"
+                  strokeWidth={1}
                 />
               ))}
-              
-              {/* Data line with glow effect */}
-              <defs>
-                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="2" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-              </defs>
-              
-              <path 
-                d={linePoints} 
-                fill="none" 
-                stroke={lineColor} 
-                strokeWidth="3"
+
+              {/* Data line */}
+              <Path
+                d={linePoints}
+                fill="none"
+                stroke={lineColor}
+                strokeWidth={3}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                filter="url(#glow)"
               />
-              
+
               {/* Current value indicator */}
-              <circle 
-                cx="100%" 
-                cy={120 - ((currentValue - yAxis[yAxis.length-1].value) * (100 / (yAxis[0].value - yAxis[yAxis.length-1].value)))} 
-                r="5" 
+              <Circle
+                cx={width - 80}
+                cy={120 - ((currentValue - yAxis[yAxis.length - 1].value) * (100 / (yAxis[0].value - yAxis[yAxis.length - 1].value)))}
+                r={5}
                 fill="#FFFFFF"
                 stroke={lineColor}
-                strokeWidth="2"
+                strokeWidth={2}
               />
-              
+
               {/* Average line */}
-              <line 
-                x1="0" 
-                y1={120 - ((data.reduce((a, b) => a + b, 0) / data.length - yAxis[yAxis.length-1].value) * (100 / (yAxis[0].value - yAxis[yAxis.length-1].value)))} 
-                x2="100%" 
-                y2={120 - ((data.reduce((a, b) => a + b, 0) / data.length - yAxis[yAxis.length-1].value) * (100 / (yAxis[0].value - yAxis[yAxis.length-1].value)))} 
-                stroke="#8F9BB3" 
-                strokeWidth="1"
+              <SvgLine
+                x1={0}
+                y1={120 - ((data.reduce((a, b) => a + b, 0) / data.length - yAxis[yAxis.length - 1].value) * (100 / (yAxis[0].value - yAxis[yAxis.length - 1].value)))}
+                x2={width - 80}
+                y2={120 - ((data.reduce((a, b) => a + b, 0) / data.length - yAxis[yAxis.length - 1].value) * (100 / (yAxis[0].value - yAxis[yAxis.length - 1].value)))}
+                stroke="#8F9BB3"
+                strokeWidth={1}
                 strokeDasharray="4 2"
               />
-            </svg>
-            
+            </Svg>
+          
             {/* X-axis labels */}
             <View style={styles.xAxis}>
               {timeLabels.map((label, index) => (
@@ -727,37 +720,37 @@ const glucoseChartData = chartData.glucose;
 
               {/* Chart area */}
               <View style={styles.chart}>
-                <svg width="100%" height="100%" viewBox={`0 0 ${width - 80} 120`}>
-                  {/* Grid lines */}
-                  <defs>
-                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e0e4ec" strokeWidth="1" />
-                    </pattern>
-                  </defs>
-                  <rect width="100%" height="100%" fill="#f8f9fb" />
-                  <rect width="100%" height="100%" fill="url(#grid)" />
+                <Svg width={width - 80} height={120} viewBox={`0 0 ${width - 80} 120`}>
+                  {/* Grid pattern */}
+                  <Defs>
+                    <Pattern id="grid" width={40} height={40} patternUnits="userSpaceOnUse">
+                      <Path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e0e4ec" strokeWidth={1} />
+                    </Pattern>
+                  </Defs>
+                  <Rect width={width - 80} height={120} fill="#f8f9fb" />
+                  <Rect width={width - 80} height={120} fill="url(#grid)" />
 
                   {/* ECG Line */}
-                  <path
+                  <Path
                     d={getLinePoints(ecgData, width - 80, 100, 0, 40)}
                     fill="none"
                     stroke="#FF3D71"
-                    strokeWidth="2"
+                    strokeWidth={2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
 
                   {/* Red line at the end */}
-                  <line
+                  <SvgLine
                     x1={(width - 80) - 40}
-                    y1="0"
+                    y1={0}
                     x2={(width - 80) - 40}
-                    y2="120"
+                    y2={120}
                     stroke="#FF3D71"
-                    strokeWidth="2"
+                    strokeWidth={2}
                     strokeDasharray="4 2"
                   />
-                </svg>
+                </Svg>
 
                 {/* X-axis labels */}
                 <View style={styles.xAxis}>

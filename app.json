@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "atmoscare",
+    "name": "AtmosCare",
     "slug": "myapp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/onboading/logo.png",
+    "icon": "./assets/onboarding/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "runtimeVersion": {
@@ -38,7 +38,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/onboarding/logo.png",
           "color": "#ffffff"
         }
       ]

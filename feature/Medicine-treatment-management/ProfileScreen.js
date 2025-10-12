@@ -9,9 +9,13 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import * as Print from 'expo-print';
 import Icon from '../../component/common/Icon';
 import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../context/AuthContext';
+import { useHealthData } from '../../context/HealthDataContext';
 import StorageService from '../../services/StorageService';
 import { getMedications, getWeeklyAdherence, getMonthlyAdherence } from '../../utils/storage';
 import { theme } from '../../utils/theme';
@@ -20,6 +24,7 @@ import ScreenHeader from '../../component/common/ScreenHeader';
 const ProfileScreen = ({ navigation }) => {
   const { user, updateUser, logout: userLogout } = useUser();
   const { logout: authLogout } = useAuth();
+  const { latestHealthData, healthHistory } = useHealthData();
   const [profile, setProfile] = useState({
     name: '',
     age: '',
@@ -60,6 +65,118 @@ const ProfileScreen = ({ navigation }) => {
       }));
     } catch (error) {
       console.error('Error loading profile:', error);
+    }
+  };
+
+  const groupLogsByDate = (logs) => {
+    const map = new Map();
+    (logs || []).forEach((log) => {
+      const d = new Date(log?.timestamp || log?.date || Date.now()).toDateString();
+      if (!map.has(d)) map.set(d, []);
+      map.get(d).push(log);
+    });
+    const days = Array.from(map.entries())
+      .map(([date, entries]) => ({ date, entries }))
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+    return days;
+  };
+
+  const bundleToHtml = (bundle) => {
+    const fmt = (v) => (typeof v === 'string' ? v : JSON.stringify(v));
+    const medsRows = (bundle.medications || []).map((m, idx) => `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${m.name || ''}</td>
+        <td>${m.dosage || ''}</td>
+        <td>${(m.times || []).join(', ')}</td>
+        <td>${m.frequency || ''}</td>
+      </tr>`).join('');
+    const logsCount = (bundle.logs || []).length;
+    const remindersCount = (bundle.reminders || []).length;
+
+    const latest = bundle.latestHealthData || {};
+    const latestRows = `
+      <tr><td>Heart Rate</td><td>${fmt(latest.heartRate?.value ?? '--')} ${latest.heartRate?.unit || ''}</td><td>${fmt(latest.heartRate?.status || 'normal')}</td></tr>
+      <tr><td>Blood Pressure</td><td>${fmt(latest.bloodPressure?.value ?? '--/--')} ${latest.bloodPressure?.unit || ''}</td><td>${fmt(latest.bloodPressure?.status || 'normal')}</td></tr>
+      <tr><td>Oxygen Level</td><td>${fmt(latest.oxygenLevel?.value ?? '--')} ${latest.oxygenLevel?.unit || ''}</td><td>${fmt(latest.oxygenLevel?.status || 'normal')}</td></tr>
+      <tr><td>Blood Glucose</td><td>${fmt(latest.bloodGlucose?.value ?? '--')} ${latest.bloodGlucose?.unit || ''}</td><td>${fmt(latest.bloodGlucose?.status || 'normal')}</td></tr>
+    `;
+
+    const histCount = (bundle.healthHistory || []).length;
+
+    return `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: -apple-system, Roboto, Arial, sans-serif; padding: 24px; }
+            h1 { margin: 0 0 8px; }
+            h2 { margin-top: 24px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+            th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+            th { background: #f5f5f5; text-align: left; }
+            .meta { color: #555; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <h1>Health Data Export</h1>
+          <div class="meta">Exported: ${bundle.exportedAt}</div>
+          <div class="meta">User: ${fmt(bundle.user?.name)} (${fmt(bundle.user?.email)})</div>
+
+          <h2>Quick Stats</h2>
+          <div class="meta">Medications: ${bundle.stats?.medications || (bundle.medications || []).length}</div>
+          <div class="meta">Logs: ${logsCount}</div>
+          <div class="meta">Reminders: ${remindersCount}</div>
+          <div class="meta">Adherence: ${bundle.stats?.adherence || 0}%</div>
+
+          <h2>Latest Health Updates</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Value</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${latestRows}
+            </tbody>
+          </table>
+          <div class="meta">History records: ${histCount}</div>
+
+          <h2>Medications</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Dosage</th>
+                <th>Times</th>
+                <th>Frequency</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${medsRows || '<tr><td colspan="5">No medications</td></tr>'}
+            </tbody>
+          </table>
+
+        </body>
+      </html>`;
+  };
+
+  const exportHealthDataPdf = async () => {
+    try {
+      const bundle = await buildDataBundle();
+      const html = bundleToHtml(bundle);
+      const { uri } = await Print.printToFileAsync({ html });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Export Health Data (PDF)' });
+      } else {
+        Alert.alert('PDF Ready', `File saved to: ${uri}`);
+      }
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      Alert.alert('Export Failed', 'Could not export PDF.');
     }
   };
 
@@ -175,6 +292,86 @@ const ProfileScreen = ({ navigation }) => {
     </View>
   );
 
+  const buildDataBundle = async () => {
+    const [medications, logs, reminders, preferences] = await Promise.all([
+      getMedications(), // match Home data source
+      StorageService.getMedicationLogs(),
+      StorageService.getReminders(),
+      StorageService.getUserPreferences(),
+    ]);
+
+    // Compute fresh quick stats to reflect the latest data (not relying on UI state)
+    let adherencePercentage = 0;
+    try {
+      const adherence = await getWeeklyAdherence();
+      adherencePercentage = Math.round(adherence?.adherenceRate || adherence?.adherencePercentage || 0);
+    } catch {}
+
+    const freshStats = {
+      medications: medications?.length || 0,
+      daysActive: stats?.daysActive || 0,
+      adherence: adherencePercentage,
+    };
+
+    return {
+      exportedAt: new Date().toISOString(),
+      user: {
+        name: profile.name,
+        email: profile.email,
+      },
+      medications,
+      logs,
+      reminders,
+      preferences,
+      latestHealthData: latestHealthData || null,
+      healthHistory: healthHistory || [],
+      stats: freshStats,
+    };
+  };
+
+  const exportHealthData = async () => {
+    try {
+      const bundle = await buildDataBundle();
+      const json = JSON.stringify(bundle, null, 2);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `health-data-${timestamp}.json`;
+      const uri = `${FileSystem.cacheDirectory}${fileName}`;
+      await FileSystem.writeAsStringAsync(uri, json, { encoding: FileSystem.EncodingType.UTF8 });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/json', dialogTitle: 'Export Health Data' });
+      } else {
+        Alert.alert('Export Ready', `File saved to: ${uri}`);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      Alert.alert('Export Failed', 'Could not export health data.');
+    }
+  };
+
+  const backupHealthData = async () => {
+    try {
+      const bundle = await buildDataBundle();
+      const json = JSON.stringify(bundle, null, 2);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const dir = `${FileSystem.documentDirectory}backups/`;
+      const fileName = `backup-${timestamp}.json`;
+      const uri = `${dir}${fileName}`;
+
+      const dirInfo = await FileSystem.getInfoAsync(dir);
+      if (!dirInfo.exists) {
+        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+      }
+
+      await FileSystem.writeAsStringAsync(uri, json, { encoding: FileSystem.EncodingType.UTF8 });
+      Alert.alert('Backup Complete', `Backup saved:
+${uri}`);
+    } catch (error) {
+      console.error('Backup failed:', error);
+      Alert.alert('Backup Failed', 'Could not backup health data.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScreenHeader 
@@ -273,7 +470,7 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Actions</Text>
           
-          <TouchableOpacity style={styles.actionCard}>
+          <TouchableOpacity style={styles.actionCard} onPress={exportHealthData}>
             <Icon name="mail" size={24} color={theme.colors.accentPrimary} />
             <View style={styles.actionText}>
               <Text style={styles.actionTitle}>Export Health Data</Text>
@@ -282,11 +479,20 @@ const ProfileScreen = ({ navigation }) => {
             <Icon name="chevron-forward" size={24} color="#E0E0E0" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionCard}>
+          <TouchableOpacity style={styles.actionCard} onPress={backupHealthData}>
             <Icon name="cloud-upload" size={24} color="#4CAF50" />
             <View style={styles.actionText}>
               <Text style={styles.actionTitle}>Backup Data</Text>
               <Text style={styles.actionDescription}>Save your data to cloud</Text>
+            </View>
+            <Icon name="chevron-forward" size={24} color="#E0E0E0" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionCard} onPress={exportHealthDataPdf}>
+            <Icon name="document" size={24} color={theme.colors.accentPrimary} />
+            <View style={styles.actionText}>
+              <Text style={styles.actionTitle}>Export as PDF</Text>
+              <Text style={styles.actionDescription}>Generate a PDF report</Text>
             </View>
             <Icon name="chevron-forward" size={24} color="#E0E0E0" />
           </TouchableOpacity>

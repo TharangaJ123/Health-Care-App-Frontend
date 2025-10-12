@@ -92,18 +92,31 @@ export const showMedicationAddedConfirmation = async (medication) => {
       return;
     }
 
-    // Show immediate confirmation notification
-    await Notifications.presentNotificationAsync({
-      title: '✅ Medication Added',
-      body: `Reminder set for ${medication.name} at ${medication.times?.join(', ') || 'scheduled time'}`,
-      data: {
-        type: 'medication-added',
-        medicationId: medication.id,
-        medicationName: medication.name
-      },
-      sound: 'default',
-      priority: 'high',
-    });
+    // Send immediate confirmation push notification; fallback to in-app alert if not supported
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Medication added',
+          body: `Reminder set for ${medication.name} at ${medication.times?.join(', ') || 'scheduled time'}`,
+          data: {
+            type: 'medication-added',
+            medicationId: medication.id,
+            medicationName: medication.name,
+          },
+          sound: 'default',
+          priority: 'high',
+          channelId: 'medication-reminders',
+        },
+        trigger: null,
+      });
+    } catch (confirmErr) {
+      console.warn('Falling back to Alert for confirmation:', confirmErr);
+      Alert.alert(
+        'Medication added',
+        `Reminder set for ${medication.name} at ${medication.times?.join(', ') || 'scheduled time'}`,
+        [{ text: 'OK' }]
+      );
+    }
 
     console.log(`Showed confirmation notification for ${medication.name}`);
   } catch (error) {
@@ -128,52 +141,8 @@ export const scheduleMedicationReminder = async (medication) => {
       return;
     }
 
-    console.log(`Scheduling ${reminderTimes.length} reminders for ${medication.name}`);
-
-    // Schedule each reminder time
-    for (const timeStr of reminderTimes) {
-      try {
-        const { hours, minutes } = convertTo24Hour(timeStr);
-        const now = new Date();
-        const scheduledTime = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate(),
-          hours,
-          minutes,
-          0
-        );
-
-        // If the time has already passed today, schedule for tomorrow
-        if (scheduledTime < now) {
-          scheduledTime.setDate(scheduledTime.getDate() + 1);
-        }
-
-        const notificationId = await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `💊 ${medication.name}`,
-            body: `Time to take ${medication.dosage || 'your medication'}`,
-            data: {
-              type: 'medication-reminder',
-              medicationId: medication.id,
-              medicationName: medication.name,
-              time: timeStr
-            },
-            sound: 'default',
-            priority: 'high',
-          },
-          trigger: {
-            hour: scheduledTime.getHours(),
-            minute: scheduledTime.getMinutes(),
-            repeats: true,
-          },
-        });
-
-        console.log(`Scheduled reminder notification ${notificationId} for ${medication.name} at ${timeStr}`);
-      } catch (error) {
-        console.error(`Error scheduling reminder notification for ${timeStr}:`, error);
-      }
-    }
+    console.log(`Scheduling disabled for ${medication.name}. Skipping recurring reminders.`);
+    return;
   } catch (error) {
     console.error('Error in scheduleMedicationReminder:', error);
     throw error;
