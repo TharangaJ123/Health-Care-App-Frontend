@@ -42,7 +42,7 @@ export default function CommunityScreen() {
   return (
     <View style={cStyles.container}>
       <ScreenHeader
-        title="Community Medicine Support"
+        title="Medicine Support"
         rightIcon={<Icon name="information-circle" size={22} color="#1976D2" />}
         rightAction={() =>
           Alert.alert(

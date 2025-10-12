@@ -226,9 +226,8 @@ function DoctorAppointmentScreen({ navigation }) {
   return (
     <ScrollView style={styles.container}>
       <AppHeader
-        title="Doctor Appointments"
+        title="Choose Doctor"
         subtitle="Choose a doctor and time"
-        rightIconName="calendar"
         onRightPress={() => {/* no-op or navigate to my appointments if available */}}
         onBack={() => navigation?.goBack?.()}
       />

@@ -8,7 +8,7 @@ const AppHeader = ({
   onBack,
   rightIconName,
   onRightPress,
-  rightIconColor = '#007AFF',
+  rightIconColor = '#ffffffff',
   style,
   showBorder = true,
 }) => {
@@ -69,13 +69,13 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     color: '#4A90E2',
     letterSpacing: -0.5,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
     fontWeight: '500',
   },
