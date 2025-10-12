@@ -350,7 +350,10 @@ const HealthDataInputScreen = ({ navigation }) => {
             </Text>
             <TouchableOpacity
               style={[healthStyles.button, { width: '100%' }]}
-              onPress={() => setShowSuccessModal(false)}
+              onPress={() => {
+                setShowSuccessModal(false);
+                navigation.navigate('Dashboard');
+              }}
             >
               <Text style={healthStyles.buttonText}>Done</Text>
             </TouchableOpacity>

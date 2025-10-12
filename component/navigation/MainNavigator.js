@@ -18,6 +18,7 @@ import TrackerScreen from '../../feature/Medicine-treatment-management/TrackerSc
 import DashboardScreen from '../../feature/healthmonitoring/DashboardScreen';
 import HealthDataInputScreen from '../../feature/healthmonitoring/HealthDataInputScreen';
 import MonitorHealthScreen from '../../feature/healthmonitoring/MonitorHealthScreen';
+import HealthDataHistoryScreen from '../../feature/healthmonitoring/HealthDataHistoryScreen';
 
 import DoctorAppointmentScreen from '../../feature/doctor-appointment/DoctorAppointmentScreen';
 import MyAppointmentsScreen from '../../feature/doctor-appointment/MyAppointmentsScreen';
@@ -132,6 +133,9 @@ const MainNavigator = () => {
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
           <Stack.Screen name="AddHealthData" component={HealthDataInputScreen} />
           <Stack.Screen name="MonitorHealth" component={MonitorHealthScreen} />
+          <Stack.Screen name="ViewDashboard" component={HealthDataHistoryScreen} />
+          
+          
 
           <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Healthcare' }} />
           <Stack.Screen
